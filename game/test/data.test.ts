@@ -4,6 +4,7 @@ import world from '../data/world.json';
 import products from '../data/products.json';
 import { DataError, loadData } from '../src/sim/data';
 
+const researchFiles = Object.keys(import.meta.glob("../../docs/research/*.md", { query: "?url" })).map((p) => p.replace("../../", ""));
 const raw = () => structuredClone({ hardware, world, products });
 
 describe('loadData', () => {
@@ -73,6 +74,7 @@ describe('loadData', () => {
     expect(w.throttle.shutdownC.value).toBe(91);
     expect(w.rentalUsdPerDay.boom.value).toBe(4);
     expect(w.rentalUsdPerDay.after.value).toBe(1);
+    expect(w.rentalUsdPerDay.boomEndIso).toBe("2018-03-31");
     expect(w.seedRound.raiseUsd.value).toBe(1_500_000);
     expect(w.seedRound.preMoneyUsd.value).toBe(8_000_000);
     expect(w.seedRound.dilution.value).toBe(0.158);
@@ -107,5 +109,24 @@ describe('loadData', () => {
     c.hardware.rigs[0].id = 'nope';
     expect(() => loadData(c)).toThrow(DataError);
     expect(() => loadData({ hardware: null, world: {}, products: {} })).toThrow(DataError);
+  });
+
+  it("every docs/research source points to an existing file", () => {
+    const found: string[] = [];
+    const walk = (v: unknown): void => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") {
+        for (const [k, x] of Object.entries(v)) {
+          if (k === "source" && typeof x === "string" && x.startsWith("docs/research/")) found.push(x);
+          else walk(x);
+        }
+      }
+    };
+    walk({ hardware, world, products });
+    expect(found.length).toBeGreaterThan(0);
+    for (const s of found) {
+      const file = s.split(/[ ;]/)[0] as string;
+      expect(researchFiles, file).toContain(file);
+    }
   });
 });

@@ -4,10 +4,22 @@
       "id": "gtx1080ti",
       "name": "NVIDIA GeForce GTX 1080 Ti Founders Edition",
       "releaseDate": "2017-03-10",
-      "priceUsd": { "value": 699, "source": "docs/research/01-hardware.md", "approx": false },
-      "watts": { "value": 250, "source": "docs/research/01-hardware.md", "approx": false },
+      "priceUsd": {
+        "value": 699,
+        "source": "https://en.wikipedia.org/wiki/GeForce_10_series",
+        "approx": false
+      },
+      "watts": {
+        "value": 250,
+        "source": "https://en.wikipedia.org/wiki/GeForce_10_series",
+        "approx": false
+      },
       "memGb": 11,
-      "p100eq": { "value": 1.0, "source": "docs/research/01-hardware.md; calibrated so 96 P100-hours on 1 GPU is about 4 days as in the opening", "approx": true },
+      "p100eq": {
+        "value": 1,
+        "source": "Game-design estimate: 1080 Ti (GP102) has FP32 throughput comparable to a Tesla P100 for transformer training without Tensor Cores; calibrated so 96 P100-hours on one GPU is about 4 days, as in the opening",
+        "approx": true
+      },
       "glb": "gpu_gtx1080ti_fe.glb",
       "learnId": "gpu_gtx1080ti"
     },
@@ -15,10 +27,22 @@
       "id": "titan_v",
       "name": "NVIDIA Titan V",
       "releaseDate": "2017-12-07",
-      "priceUsd": { "value": 2999, "source": "docs/research/01-hardware.md", "approx": false },
-      "watts": { "value": 250, "source": "docs/research/01-hardware.md", "approx": false },
+      "priceUsd": {
+        "value": 2999,
+        "source": "https://en.wikipedia.org/wiki/Volta_(microarchitecture)",
+        "approx": false
+      },
+      "watts": {
+        "value": 250,
+        "source": "https://en.wikipedia.org/wiki/Volta_(microarchitecture)",
+        "approx": false
+      },
       "memGb": 12,
-      "p100eq": { "value": 2.5, "source": "docs/research/01-hardware.md (Tensor Cores)", "approx": true },
+      "p100eq": {
+        "value": 2.5,
+        "source": "Game-design estimate: relative transformer-training throughput vs a Tesla P100; Titan V Tensor Cores give about 2.5x",
+        "approx": true
+      },
       "glb": "gpu_titan_v.glb",
       "learnId": "gpu_titan_v"
     }
@@ -28,7 +52,11 @@
       "id": "tower_2017",
       "name": "Torre gaming 2017 (tu PC)",
       "releaseDate": "2017-01-01",
-      "priceUsd": { "value": 1500, "source": "docs/research/01-hardware.md; 2017 gaming tower without GPU, already owned at start", "approx": true },
+      "priceUsd": {
+        "value": 1500,
+        "source": "Game-design estimate: about 1,500 USD for a 2017 gaming tower without GPU (already owned at game start)",
+        "approx": true
+      },
       "gpuSlots": 2,
       "psuWatts": 1000,
       "baseWatts": 150,
@@ -38,7 +66,11 @@
       "id": "open_frame",
       "name": "Bastidor abierto de minería",
       "releaseDate": "2018-01-01",
-      "priceUsd": { "value": 350, "source": "docs/research/01-hardware.md; asset rig_02_open_frame", "approx": true },
+      "priceUsd": {
+        "value": 350,
+        "source": "Game-design estimate: 350 USD for an open mining frame with risers; docs/research/01-hardware.md quotes 100-300 USD for bare frames, riser cables and mounting add the rest",
+        "approx": true
+      },
       "gpuSlots": 6,
       "psuWatts": 3200,
       "baseWatts": 150,
