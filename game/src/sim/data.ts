@@ -1,0 +1,126 @@
+import type { GameData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
+
+export class DataError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DataError';
+  }
+}
+
+type Obj = Record<string, unknown>;
+
+function obj(v: unknown, path: string): Obj {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new DataError(`${path}: expected object`);
+  return v as Obj;
+}
+function str(v: unknown, path: string): string {
+  if (typeof v !== 'string' || v.length === 0) throw new DataError(`${path}: expected non-empty string`);
+  return v;
+}
+function num(v: unknown, path: string): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw new DataError(`${path}: expected finite number`);
+  return v;
+}
+function iso(v: unknown, path: string): string {
+  const s = str(v, path);
+  if (!/^\d{4}-\d{2}-\d{2}/.test(s)) throw new DataError(`${path}: expected ISO date`);
+  return s;
+}
+function exact<T extends string | number>(v: unknown, expected: T, path: string): T {
+  if (v !== expected) throw new DataError(`${path}: expected ${JSON.stringify(expected)}`);
+  return expected;
+}
+function sourced(v: unknown, path: string): Sourced<number> {
+  const o = obj(v, path);
+  const approx = o.approx;
+  if (typeof approx !== 'boolean') throw new DataError(`${path}.approx: expected boolean`);
+  return { value: num(o.value, `${path}.value`), source: str(o.source, `${path}.source`), approx };
+}
+function arr(v: unknown, path: string): unknown[] {
+  if (!Array.isArray(v)) throw new DataError(`${path}: expected array`);
+  return v;
+}
+
+function gpu(v: unknown, path: string): GpuModel {
+  const o = obj(v, path);
+  return {
+    id: str(o.id, `${path}.id`),
+    name: str(o.name, `${path}.name`),
+    releaseDate: iso(o.releaseDate, `${path}.releaseDate`),
+    priceUsd: sourced(o.priceUsd, `${path}.priceUsd`),
+    watts: sourced(o.watts, `${path}.watts`),
+    memGb: num(o.memGb, `${path}.memGb`),
+    p100eq: sourced(o.p100eq, `${path}.p100eq`),
+    glb: str(o.glb, `${path}.glb`),
+    learnId: str(o.learnId, `${path}.learnId`),
+  };
+}
+
+function rig(v: unknown, path: string): RigModel {
+  const o = obj(v, path);
+  const id = o.id;
+  if (id !== 'tower_2017' && id !== 'open_frame') {
+    throw new DataError(`${path}.id: expected "tower_2017" or "open_frame"`);
+  }
+  return {
+    id,
+    name: str(o.name, `${path}.name`),
+    releaseDate: iso(o.releaseDate, `${path}.releaseDate`),
+    priceUsd: sourced(o.priceUsd, `${path}.priceUsd`),
+    gpuSlots: num(o.gpuSlots, `${path}.gpuSlots`),
+    psuWatts: num(o.psuWatts, `${path}.psuWatts`),
+    baseWatts: num(o.baseWatts, `${path}.baseWatts`),
+    glb: str(o.glb, `${path}.glb`),
+  };
+}
+
+function world(v: unknown, path: string): WorldData {
+  const o = obj(v, path);
+  const th = obj(o.throttle, `${path}.throttle`);
+  const rent = obj(o.rentalUsdPerDay, `${path}.rentalUsdPerDay`);
+  const seed = obj(o.seedRound, `${path}.seedRound`);
+  return {
+    startIso: exact(o.startIso, '2017-06-12T17:57:00Z', `${path}.startIso`),
+    startCashUsd: exact(o.startCashUsd, 10000, `${path}.startCashUsd`),
+    circuitWatts: exact(o.circuitWatts, 1800, `${path}.circuitWatts`),
+    circuitSafeWatts: exact(o.circuitSafeWatts, 1440, `${path}.circuitSafeWatts`),
+    electricityUsdPerKwh: sourced(o.electricityUsdPerKwh, `${path}.electricityUsdPerKwh`),
+    failPerGpuDay: sourced(o.failPerGpuDay, `${path}.failPerGpuDay`),
+    throttle: {
+      throttleC: sourced(th.throttleC, `${path}.throttle.throttleC`),
+      throttleFactor: sourced(th.throttleFactor, `${path}.throttle.throttleFactor`),
+      shutdownC: sourced(th.shutdownC, `${path}.throttle.shutdownC`),
+    },
+    rentalUsdPerDay: {
+      boom: sourced(rent.boom, `${path}.rentalUsdPerDay.boom`),
+      after: sourced(rent.after, `${path}.rentalUsdPerDay.after`),
+      boomEndIso: iso(rent.boomEndIso, `${path}.rentalUsdPerDay.boomEndIso`),
+    },
+    seedRound: {
+      raiseUsd: sourced(seed.raiseUsd, `${path}.seedRound.raiseUsd`),
+      preMoneyUsd: sourced(seed.preMoneyUsd, `${path}.seedRound.preMoneyUsd`),
+      dilution: sourced(seed.dilution, `${path}.seedRound.dilution`),
+    },
+  };
+}
+
+function products(v: unknown, path: string): ProductsData {
+  const o = obj(v, path);
+  const tr = obj(o.translation, `${path}.translation`);
+  return {
+    translation: {
+      defaultPriceUsdPerMChars: sourced(tr.defaultPriceUsdPerMChars, `${path}.translation.defaultPriceUsdPerMChars`),
+    },
+  };
+}
+
+/** Validates raw JSON (extra fields tolerated, defined ones strict). Throws DataError naming the path. */
+export function loadData(raw: { hardware: unknown; world: unknown; products: unknown }): GameData {
+  const hw = obj(raw.hardware, 'hardware');
+  return {
+    gpus: arr(hw.gpus, 'hardware.gpus').map((g, i) => gpu(g, `hardware.gpus[${i}]`)),
+    rigs: arr(hw.rigs, 'hardware.rigs').map((r, i) => rig(r, `hardware.rigs[${i}]`)),
+    world: world(raw.world, 'world'),
+    products: products(raw.products, 'products'),
+  };
+}

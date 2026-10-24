@@ -1,0 +1,5 @@
+{
+  "translation": {
+    "defaultPriceUsdPerMChars": { "value": 20, "source": "Public translation API rates 2017 (Google Cloud Translation: $20 per million characters)", "approx": true }
+  }
+}

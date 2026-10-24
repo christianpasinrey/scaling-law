@@ -1,0 +1,23 @@
+{
+  "startIso": "2017-06-12T17:57:00Z",
+  "startCashUsd": 10000,
+  "circuitWatts": 1800,
+  "circuitSafeWatts": 1440,
+  "electricityUsdPerKwh": { "value": 0.13, "source": "US residential average 2017 (EIA)", "approx": true },
+  "failPerGpuDay": { "value": 0.00141, "source": "docs/research/02-datacenter.md §10.1 (Llama 3: 4.7e-4 interruptions/GPU/day) x3 game design for a garage", "approx": true },
+  "throttle": {
+    "throttleC": { "value": 84, "source": "approx. Pascal-generation thermal limit", "approx": true },
+    "throttleFactor": { "value": 0.7, "source": "approx. game-design simplification of Pascal throttling", "approx": true },
+    "shutdownC": { "value": 91, "source": "approx. Pascal-generation thermal limit", "approx": true }
+  },
+  "rentalUsdPerDay": {
+    "boom": { "value": 4, "source": "approx. game-design estimate: 2017-2018 crypto-mining boom GPU rental", "approx": true },
+    "after": { "value": 1, "source": "approx. game-design estimate: GPU rental after the boom", "approx": true },
+    "boomEndIso": "2019-01-01T00:00:00Z"
+  },
+  "seedRound": {
+    "raiseUsd": { "value": 1500000, "source": "docs/research/03-economy.md §10.3 scaled to 2017", "approx": true },
+    "preMoneyUsd": { "value": 8000000, "source": "docs/research/03-economy.md §10.3 scaled to 2017", "approx": true },
+    "dilution": { "value": 0.158, "source": "docs/research/03-economy.md §10.3: 1.5 / (8 + 1.5)", "approx": true }
+  }
+}
