@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaling Law — 12 de junio de 2017</title>
+<style>
+  :root {
+    --bg: #070a10;
+    --panel: #0d131d;
+    --line: #1d2a3b;
+    --ink: #d8e3f0;
+    --muted: #7d8da3;
+    --accent: #5be7c4;
+    --accent2: #8aa8ff;
+    --warn: #ffb547;
+    --paper: #fbfaf6;
+    --paper-ink: #1b1b1b;
+    /* colours of the original Figure 1 */
+    --c-emb: #f6cfcf;
+    --c-mha: #f9d39b;
+    --c-norm: #f0eea2;
+    --c-ff: #bfe0f3;
+    --c-lin: #d8d0f3;
+    --c-soft: #c6e9c2;
+    --c-frame: #ececec;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(1200px 700px at 70% 20%, #12304a55, transparent 60%),
+                repeating-linear-gradient(0deg, #ffffff05 0 1px, transparent 1px 3px); }
+
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 16px;
+    padding: 14px 22px; border-bottom: 1px solid var(--line); background: #070a10cc; backdrop-filter: blur(6px); z-index: 5; }
+  #hud .brand { font-weight: 700; letter-spacing: .18em; font-size: 12px; color: var(--accent); }
+  #hud .date { font-family: Consolas, "Cascadia Mono", monospace; color: var(--muted); font-size: 13px; }
+  #hud .spacer { flex: 1; }
+  button { font: inherit; color: var(--ink); background: #132033; border: 1px solid #27405f; border-radius: 8px;
+    padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #032019; border-color: var(--accent); font-weight: 700; }
+
+  #stage { position: absolute; inset: 58px 0 0 0; display: grid; grid-template-columns: minmax(380px, 1fr) minmax(460px, 1.15fr);
+    gap: 28px; padding: 26px 32px; }
+  .scene { opacity: 0; transform: translateY(14px); transition: opacity .8s ease, transform .8s ease; }
+  .scene.on { opacity: 1; transform: none; }
+
+  /* ---------- arXiv listing ---------- */
+  #listing { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(640px, 90vw);
+    font-family: Consolas, "Cascadia Mono", monospace; transition: opacity .7s; }
+  #listing .kicker { color: var(--muted); font-size: 13px; letter-spacing: .08em; }
+  #listing .title { color: var(--ink); font-size: 26px; margin: 10px 0 6px; font-family: Georgia, "Times New Roman", serif; }
+  #listing .meta { color: var(--accent2); font-size: 13px; }
+  #listing .caret { display: inline-block; width: 9px; height: 1.1em; background: var(--accent); vertical-align: -2px;
+    animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- paper sheet ---------- */
+  #paperWrap { display: flex; flex-direction: column; align-items: center; gap: 14px; overflow: auto; }
+  #paper { position: relative; width: min(560px, 100%); background: var(--paper); color: var(--paper-ink);
+    padding: 44px 46px 40px 60px; box-shadow: 0 30px 80px #000a, 0 0 0 1px #ffffff10; border-radius: 3px;
+    font-family: "Times New Roman", Georgia, serif; }
+  #paper .stamp { position: absolute; left: 14px; top: 40px; bottom: 40px; writing-mode: vertical-rl; transform: rotate(180deg);
+    font-family: "Times New Roman", serif; color: #9a9a9a; font-size: 15px; letter-spacing: .02em; }
+  #paper h1 { font-size: 27px; text-align: center; margin: 4px 0 22px; font-weight: 700; }
+  .authors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 10px; font-size: 12px; text-align: center; margin-bottom: 22px; }
+  .authors b { display: block; font-size: 12.5px; }
+  .authors span { color: #444; font-style: italic; }
+  #paper h2 { font-size: 15px; text-align: center; margin: 10px 0 6px; }
+  #paper p { font-size: 13.5px; text-align: justify; margin: 0 0 10px; line-height: 1.45; }
+  #paper .note { font-size: 11px; color: #666; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 14px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; font-family: "Segoe UI", sans-serif; }
+  .facts div { background: #f0efe9; border-radius: 6px; padding: 8px; text-align: center; font-size: 11px; color: #555; }
+  .facts strong { display: block; font-size: 17px; color: #111; }
+
+  /* ---------- figure ---------- */
+  #figWrap { position: relative; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  #figCard { position: relative; flex: 1; min-height: 0; background: #f7f7f4; border-radius: 10px; padding: 8px;
+    box-shadow: 0 20px 60px #0009, inset 0 0 0 1px #ffffff20; }
+  #fig { width: 100%; height: 100%; display: block; }
+  #fig text { font-family: Arial, Helvetica, sans-serif; fill: #111; }
+  #fig .blk rect { stroke: #333; stroke-width: 1.1; rx: 6; transition: filter .3s, stroke-width .3s; }
+  #fig .blk { cursor: pointer; opacity: 0; transition: opacity .5s; }
+  #fig .blk.on { opacity: 1; }
+  #fig .blk.hot rect { stroke: #0a7d63; stroke-width: 2.4; filter: drop-shadow(0 0 6px #19d6a9); }
+  #fig .wire { fill: none; stroke: #222; stroke-width: 1.4; marker-end: url(#arrow); opacity: 0; transition: opacity .5s; }
+  #fig .wire.on { opacity: 1; }
+  #fig .frame { fill: var(--c-frame); stroke: #8c8c8c; stroke-width: 1.2; opacity: 0; transition: opacity .6s; }
+  #fig .frame.on { opacity: 1; }
+  #fig .lbl { font-size: 12px; opacity: 0; transition: opacity .5s; }
+  #fig .lbl.on { opacity: 1; }
+  #fig .tok { font-family: Consolas, monospace; font-size: 10.5px; }
+  #fig .pulse { fill: #10c79a; filter: drop-shadow(0 0 4px #10f0b8); }
+
+  #explain { min-height: 92px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+  #explain .t { color: var(--accent); font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+  #explain .d { color: var(--ink); font-size: 14px; margin-top: 4px; }
+  #explain .f { font-family: "Cambria Math", "Times New Roman", serif; color: var(--warn); font-size: 16px; margin-top: 6px; }
+
+  /* ---------- attention matrix ---------- */
+  #attn { width: min(560px, 100%); background: #0d131df0; border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; opacity: 0; transition: opacity .7s; pointer-events: none; }
+  #attn.on { opacity: 1; }
+  #attn h3 { margin: 0 0 6px; font-size: 12px; color: var(--accent); letter-spacing: .06em; }
+  #attn small { color: var(--muted); font-size: 11px; }
+  #attnGrid { display: grid; gap: 2px; margin-top: 8px; font: 10px Consolas, monospace; color: var(--muted); }
+  #attnGrid .c { height: 18px; border-radius: 2px; background: #10c79a; }
+
+  /* ---------- garage card ---------- */
+  #garage { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -46%); width: min(620px, 92vw);
+    background: var(--panel); border: 1px solid #27405f; border-radius: 14px; padding: 26px 28px; z-index: 6;
+    box-shadow: 0 40px 120px #000; opacity: 0; pointer-events: none; transition: opacity .7s, transform .7s; }
+  #garage.on { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+  #garage h2 { margin: 0 0 6px; font-size: 22px; }
+  #garage p { color: var(--muted); margin: 0 0 14px; }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 18px; }
+  .cmp div { background: #0a1018; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .cmp b { color: var(--accent2); font-size: 12px; letter-spacing: .06em; }
+  .cmp .big { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .cmp .sub { color: var(--muted); font-size: 12px; }
+  #garage .row { display: flex; gap: 10px; justify-content: flex-end; }
+
+  @media (max-width: 980px) {
+    #stage { grid-template-columns: 1fr; overflow: auto; }
+    #attn { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<header id="hud">
+  <span class="brand">SCALING LAW</span>
+  <span class="date" id="clock">2017-06-12 · 17:57 UTC</span>
+  <span class="spacer"></span>
+  <button id="replay" title="Volver a empezar">↺ Repetir</button>
+  <button id="skip">Saltar intro ⟶</button>
+</header>
+
+<div id="listing">
+  <div class="kicker">arXiv · cs.CL · New submissions</div>
+  <div class="title" id="typed"></div>
+  <div class="meta" id="meta"></div>
+</div>
+
+<main id="stage">
+  <section id="paperWrap" class="scene">
+    <article id="paper">
+      <div class="stamp">arXiv:1706.03762v1 [cs.CL] 12 Jun 2017</div>
+      <h1>Attention Is All You Need</h1>
+      <div class="authors">
+        <div><b>Ashish Vaswani</b><span>Google Brain</span></div>
+        <div><b>Noam Shazeer</b><span>Google Brain</span></div>
+        <div><b>Niki Parmar</b><span>Google Research</span></div>
+        <div><b>Jakob Uszkoreit</b><span>Google Research</span></div>
+        <div><b>Llion Jones</b><span>Google Research</span></div>
+        <div><b>Aidan N. Gomez</b><span>University of Toronto</span></div>
+        <div><b>Łukasz Kaiser</b><span>Google Brain</span></div>
+        <div><b>Illia Polosukhin</b><span>&nbsp;</span></div>
+      </div>
+      <h2>De qué va (resumen)</h2>
+      <p>Hasta ahora, traducir texto con redes neuronales exigía leer las frases palabra a palabra con redes recurrentes,
+        o con convoluciones. Este trabajo propone el <b>Transformer</b>: una arquitectura que prescinde de ambas y se apoya
+        <b>solo en mecanismos de atención</b>, donde cada palabra mira a todas las demás a la vez.</p>
+      <p>Al no tener que procesar en secuencia, se puede <b>paralelizar en GPU</b> mucho mejor: entrena más rápido y además
+        traduce mejor. Supera el estado del arte en inglés→alemán e inglés→francés con una fracción del coste de cómputo.</p>
+      <div class="facts">
+        <div><strong>28,4</strong>BLEU EN→DE</div>
+        <div><strong>41,0</strong>BLEU EN→FR</div>
+        <div><strong>8 × P100</strong>modelo base · 12 h</div>
+      </div>
+      <div class="note">Resumen redactado para Scaling Law. Datos: arXiv 1706.03762 (v1, 12 jun 2017).
+        Figura de la derecha redibujada a partir de la descripción de la arquitectura (sección 3).</div>
+    </article>
+    <aside id="attn">
+      <h3>ATENCIÓN · capa 6, una cabeza</h3>
+      <small>Cuánto mira cada palabra de salida a cada palabra de entrada (ilustrativo).</small>
+      <div id="attnGrid"></div>
+    </aside>
+  </section>
+
+  <section id="figWrap" class="scene">
+    <div id="figCard"><svg id="fig" viewBox="0 0 540 760" preserveAspectRatio="xMidYMid meet" aria-label="Arquitectura Transformer">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#222"/>
+        </marker>
+      </defs>
+      <g id="layer-frames"></g><g id="layer-wires"></g><g id="layer-blocks"></g><g id="layer-labels"></g><g id="layer-pulses"></g>
+    </svg></div>
+    <div id="explain"><div class="t">La Figura 1</div>
+      <div class="d">El codificador (izquierda) lee la frase de entrada. El decodificador (derecha) escribe la traducción palabra a palabra.
+        Pulsa cualquier bloque para ver qué hace.</div></div>
+  </section>
+</main>
+
+<div id="garage">
+  <h2>Tu garaje, junio de 2017</h2>
+  <p>Acabas de leerlo. Si esto funciona como dicen, quien tenga más cómputo y mejores datos va a construir algo muy grande.
+     Tienes ahorros, una idea y un PC. Primer objetivo: <b>replicar el paper</b>.</p>
+  <div class="cmp">
+    <div><b>GOOGLE BRAIN</b><div class="big">8 × Tesla P100</div><div class="sub">modelo base en ~12 horas</div></div>
+    <div><b>TÚ</b><div class="big">1 × GTX 1080 Ti</div><div class="sub">el mismo modelo en ~4 días (estimado)</div></div>
+  </div>
+  <div class="row"><button id="again">Ver otra vez</button><button class="primary" id="start">Empezar en el garaje ⟶</button></div>
+</div>
+
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = s => document.querySelector(s);
+  const svg = $('#fig');
+  const L = { frames: $('#layer-frames'), wires: $('#layer-wires'), blocks: $('#layer-blocks'), labels: $('#layer-labels'), pulses: $('#layer-pulses') };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, reduced ? 0 : ms));
+  const el = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; };
+
+  // ---------- explanations (learn mode seed) ----------
+  const INFO = {
+    emb:  ['Embedding', 'Convierte cada palabra (token) en un vector de 512 números que el modelo aprende durante el entrenamiento.', 'd_model = 512'],
+    pe:   ['Positional Encoding', 'La atención no sabe en qué orden van las palabras. Se suma a cada vector una onda seno/coseno distinta según su posición.', 'PE(pos,2i) = sin(pos / 10000^(2i/d_model))'],
+    mha:  ['Multi-Head Attention', 'Cada palabra calcula a qué otras palabras debe prestar atención. Lo hace 8 veces en paralelo (8 cabezas), cada una fijándose en relaciones distintas.', 'Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V'],
+    mmha: ['Masked Multi-Head Attention', 'Igual que la atención normal, pero con máscara: al escribir la palabra n, el decodificador no puede mirar las palabras futuras.', 'h = 8 cabezas · d_k = 64'],
+    xatt: ['Atención codificador → decodificador', 'Aquí el decodificador consulta la frase original: sus preguntas (Q) vienen de la traducción en curso, y claves y valores (K, V) del codificador.', 'Q ← decodificador · K,V ← codificador'],
+    norm: ['Add & Norm', 'Conexión residual (se suma la entrada a la salida) y normalización. Permite apilar muchas capas sin que el entrenamiento se rompa.', 'LayerNorm(x + Sublayer(x))'],
+    ff:   ['Feed Forward', 'Una pequeña red neuronal aplicada a cada posición por separado. Aquí está buena parte de los parámetros del modelo.', 'FFN(x) = max(0, xW₁ + b₁)W₂ + b₂ · d_ff = 2048'],
+    lin:  ['Linear', 'Proyecta el vector final sobre todo el vocabulario: una puntuación por cada palabra posible.', 'vocabulario ≈ 37.000 tokens (EN-DE)'],
+    soft: ['Softmax', 'Convierte las puntuaciones en probabilidades. La palabra más probable es la siguiente de la traducción.', 'pᵢ = eᶻⁱ / Σⱼ eᶻʲ'],
+    nx:   ['N × 6', 'Cada bloque gris se repite 6 veces apiladas, en el codificador y en el decodificador. Más capas, más capacidad… y más cómputo. Esa es la ley de escala.', 'N = 6 (base) · 65 M parámetros'],
+  };
+  function explain(key) {
+    const [t, d, f] = INFO[key];
+    $('#explain').innerHTML = `<div class="t">${t}</div><div class="d">${d}</div><div class="f">${f}</div>`;
+    document.querySelectorAll('#fig .blk').forEach(b => b.classList.toggle('hot', b.dataset.k === key));
+  }
+
+  // ---------- layout of Figure 1 ----------
+  const W = 150, Hh = 32, EX = 140, DX = 395;
+  const blocks = [], wires = [], frames = [], labels = [];
+  function block(id, cx, y, text, color, key, h = Hh) { blocks.push({ id, cx, y, text, color, key, h }); return { cx, top: y - h / 2, bot: y + h / 2 }; }
+  function wire(id, d) { wires.push({ id, d }); }
+  function label(id, x, y, text, anchor = 'middle', size = 12, weight = 400) { labels.push({ id, x, y, text, anchor, size, weight }); }
+
+  // encoder
+  const eEmb = block('eEmb', EX, 650, 'Input Embedding', 'var(--c-emb)', 'emb');
+  const eMha = block('eMha', EX, 520, 'Multi-Head Attention', 'var(--c-mha)', 'mha', 40);
+  const eN1  = block('eN1',  EX, 470, 'Add & Norm', 'var(--c-norm)', 'norm', 24);
+  const eFf  = block('eFf',  EX, 400, 'Feed Forward', 'var(--c-ff)', 'ff', 40);
+  const eN2  = block('eN2',  EX, 350, 'Add & Norm', 'var(--c-norm)', 'norm', 24);
+  frames.push({ id: 'eFrame', x: EX - W / 2 - 18, y: 324, w: W + 36, h: 230 });
+  // decoder
+  const dEmb = block('dEmb', DX, 650, 'Output Embedding', 'var(--c-emb)', 'emb');
+  const dMm  = block('dMm',  DX, 520, 'Masked Multi-Head Attention', 'var(--c-mha)', 'mmha', 40);
+  const dN1  = block('dN1',  DX, 470, 'Add & Norm', 'var(--c-norm)', 'norm', 24);
+  const dX   = block('dX',   DX, 400, 'Multi-Head Attention', 'var(--c-mha)', 'xatt', 40);
+  const dN2  = block('dN2',  DX, 350, 'Add & Norm', 'var(--c-norm)', 'norm', 24);
+  const dFf  = block('dFf',  DX, 280, 'Feed Forward', 'var(--c-ff)', 'ff', 40);
+  const dN3  = block('dN3',  DX, 230, 'Add & Norm', 'var(--c-norm)', 'norm', 24);
+  frames.push({ id: 'dFrame', x: DX - W / 2 - 18, y: 204, w: W + 36, h: 350 });
+  const lin  = block('lin',  DX, 150, 'Linear', 'var(--c-lin)', 'lin', 26);
+  const soft = block('soft', DX, 104, 'Softmax', 'var(--c-soft)', 'soft', 26);
+
+  // positional encoding junctions
+  const PE_Y = 595;
+  label('eNx', EX - W / 2 - 34, 440, 'N×', 'middle', 15, 700);
+  label('dNx', DX + W / 2 + 34, 380, '×N', 'middle', 15, 700);
+  label('in',  EX, 742, 'Inputs');
+  label('out', DX, 742, 'Outputs (shifted right)');
+  label('prob', DX, 40, 'Output Probabilities');
+  label('pe1', EX - 92, PE_Y + 4, 'Positional', 'end', 11);
+  label('pe1b', EX - 92, PE_Y + 18, 'Encoding', 'end', 11);
+  label('pe2', DX + 92, PE_Y + 4, 'Positional', 'start', 11);
+  label('pe2b', DX + 92, PE_Y + 18, 'Encoding', 'start', 11);
+
+  // main vertical flow
+  const v = (x, y1, y2) => `M${x},${y1} L${x},${y2}`;
+  wire('w_in',  v(EX, 728, eEmb.bot));
+  wire('w_e1',  v(EX, eEmb.top, PE_Y + 9));
+  wire('w_e2',  v(EX, PE_Y - 9, eMha.bot));
+  wire('w_e3',  v(EX, eMha.top, eN1.bot));
+  wire('w_e4',  v(EX, eN1.top, eFf.bot));
+  wire('w_e5',  v(EX, eFf.top, eN2.bot));
+  wire('w_out', v(DX, 728, dEmb.bot));
+  wire('w_d1',  v(DX, dEmb.top, PE_Y + 9));
+  wire('w_d2',  v(DX, PE_Y - 9, dMm.bot));
+  wire('w_d3',  v(DX, dMm.top, dN1.bot));
+  wire('w_d4',  v(DX, dN1.top, dX.bot));
+  wire('w_d5',  v(DX, dX.top, dN2.bot));
+  wire('w_d6',  v(DX, dN2.top, dFf.bot));
+  wire('w_d7',  v(DX, dFf.top, dN3.bot));
+  wire('w_d8',  v(DX, dN3.top, lin.bot));
+  wire('w_d9',  v(DX, lin.top, soft.bot));
+  wire('w_d10', v(DX, soft.top, 52));
+  // Q, K, V fan-in into attention blocks (three arrows)
+  const fan = (id, b, srcY, x) => [-38, 0, 38].forEach((o, i) => wire(`${id}_${i}`, `M${x},${srcY} C${x},${srcY - 14} ${x + o},${b.bot + 16} ${x + o},${b.bot}`));
+  fan('f_e', eMha, eMha.bot + 26, EX);
+  fan('f_d', dMm, dMm.bot + 26, DX);
+  // residual connections (around the left of each sub-layer)
+  const res = (id, x, y1, yN) => wire(id, `M${x},${y1} L${x - W / 2 - 10},${y1} L${x - W / 2 - 10},${yN} L${x - W / 2},${yN}`);
+  res('r_e1', EX, eMha.bot + 12, 470); res('r_e2', EX, eFf.bot + 10, 350);
+  res('r_d1', DX, dMm.bot + 12, 470); res('r_d2', DX, dX.bot + 10, 350); res('r_d3', DX, dFf.bot + 10, 230);
+  // encoder output → K, V of the decoder cross-attention, and Q from below
+  wire('x_enc', `M${EX},${eN2.top} L${EX},300 C${EX},280 ${(EX + DX) / 2},300 ${(EX + DX) / 2},360 L${(EX + DX) / 2},${dX.bot + 22} C${(EX + DX) / 2},${dX.bot + 4} ${DX - 38},${dX.bot + 22} ${DX - 38},${dX.bot}`);
+  wire('x_enc2', `M${(EX + DX) / 2},${dX.bot + 22} C${(EX + DX) / 2 + 20},${dX.bot + 8} ${DX},${dX.bot + 22} ${DX},${dX.bot}`);
+  wire('x_q', `M${DX},${dN1.top} C${DX + 30},${dN1.top - 10} ${DX + 38},${dX.bot + 14} ${DX + 38},${dX.bot}`);
+
+  // ---------- draw ----------
+  frames.forEach(f => { const r = el('rect', { x: f.x, y: f.y, width: f.w, height: f.h, rx: 12, class: 'frame', 'data-id': f.id }, L.frames);
+    r.addEventListener('click', () => explain('nx')); });
+  wires.forEach(w => el('path', { d: w.d, class: 'wire', 'data-id': w.id }, L.wires));
+  blocks.forEach(b => {
+    const g = el('g', { class: 'blk', 'data-id': b.id, 'data-k': b.key }, L.blocks);
+    el('rect', { x: b.cx - W / 2, y: b.y - b.h / 2, width: W, height: b.h, fill: b.color }, g);
+    const words = b.text.length > 22 ? [b.text.split(' ').slice(0, 1).join(' '), b.text.split(' ').slice(1).join(' ')] : [b.text];
+    words.forEach((t, i) => { const tx = el('text', { x: b.cx, y: b.y + 4 + (i - (words.length - 1) / 2) * 13, 'text-anchor': 'middle', 'font-size': 12 }, g); tx.textContent = t; });
+    g.addEventListener('click', () => explain(b.key));
+  });
+  [EX, DX].forEach((x, i) => { // ⊕ and the sine glyph for positional encoding
+    const g = el('g', { class: 'blk', 'data-id': 'pe' + i, 'data-k': 'pe' }, L.blocks);
+    el('circle', { cx: x, cy: PE_Y, r: 9, fill: '#fff', stroke: '#222', 'stroke-width': 1.3 }, g);
+    el('path', { d: `M${x - 6},${PE_Y} L${x + 6},${PE_Y} M${x},${PE_Y - 6} L${x},${PE_Y + 6}`, stroke: '#222', 'stroke-width': 1.3 }, g);
+    const sx = i === 0 ? x - 52 : x + 52;
+    el('circle', { cx: sx, cy: PE_Y, r: 14, fill: '#fff', stroke: '#222', 'stroke-width': 1.2 }, g);
+    el('path', { d: `M${sx - 10},${PE_Y} C${sx - 6},${PE_Y - 12} ${sx - 2},${PE_Y - 12} ${sx},${PE_Y} S${sx + 6},${PE_Y + 12} ${sx + 10},${PE_Y}`, fill: 'none', stroke: '#222', 'stroke-width': 1.2 }, g);
+    el('path', { d: `M${sx + (i === 0 ? 14 : -14)},${PE_Y} L${x + (i === 0 ? -9 : 9)},${PE_Y}`, class: 'wire on', 'data-id': 'pew' + i }, L.wires);
+    g.addEventListener('click', () => explain('pe'));
+  });
+  labels.forEach(l => { const t = el('text', { x: l.x, y: l.y, 'text-anchor': l.anchor, 'font-size': l.size, 'font-weight': l.weight, class: 'lbl', 'data-id': l.id }, L.labels); t.textContent = l.text; });
+
+  // token chips under Inputs / Outputs
+  const SRC = ['Attention', 'is', 'all', 'you', 'need'];
+  const TGT = ['<s>', 'Aufmerksamkeit', 'ist', 'alles'];
+  const chips = (arr, cx, y, id) => { const g = el('g', { class: 'lbl', 'data-id': id }, L.labels);
+    let x = cx - arr.reduce((s, t) => s + t.length * 6.2 + 10, 0) / 2;
+    arr.forEach(t => { const w = t.length * 6.2 + 6; el('rect', { x, y, width: w, height: 15, rx: 3, fill: '#e2f7f1', stroke: '#0a7d63', 'stroke-width': .8 }, g);
+      const tx = el('text', { x: x + w / 2, y: y + 11, 'text-anchor': 'middle', class: 'tok' }, g); tx.textContent = t; x += w + 4; }); };
+  chips(SRC, EX, 700, 'srcTok'); chips(TGT, DX, 700, 'tgtTok');
+  const outTok = el('text', { x: DX, y: 22, 'text-anchor': 'middle', class: 'lbl tok', 'font-size': 13, 'data-id': 'next', fill: '#0a7d63' }, L.labels);
+
+  // ---------- reveal order (bottom → top, like reading the figure) ----------
+  const order = [
+    ['srcTok', 'in', 'w_in', 'eEmb', 'w_e1', 'pe0', 'pew0', 'pe1', 'pe1b'],
+    ['w_e2', 'eFrame', 'f_e_0', 'f_e_1', 'f_e_2', 'eMha', 'r_e1', 'w_e3', 'eN1'],
+    ['w_e4', 'eFf', 'r_e2', 'w_e5', 'eN2', 'eNx'],
+    ['tgtTok', 'out', 'w_out', 'dEmb', 'w_d1', 'pe1', 'pew1', 'pe2', 'pe2b'],
+    ['w_d2', 'dFrame', 'f_d_0', 'f_d_1', 'f_d_2', 'dMm', 'r_d1', 'w_d3', 'dN1'],
+    ['x_enc', 'x_enc2', 'x_q', 'w_d4', 'dX', 'r_d2', 'w_d5', 'dN2'],
+    ['w_d6', 'dFf', 'r_d3', 'w_d7', 'dN3', 'dNx'],
+    ['w_d8', 'lin', 'w_d9', 'soft', 'w_d10', 'prob', 'next'],
+  ];
+  const tellAt = ['emb', 'mha', 'ff', 'emb', 'mmha', 'xatt', 'nx', 'soft'];
+  function reveal(i) { order[i].forEach(id => svg.querySelectorAll(`[data-id="${id}"]`).forEach(n => n.classList.add('on'))); explain(tellAt[i]); }
+
+  // ---------- pulses: tokens flowing through the network ----------
+  const flowPaths = [['w_in', 'w_e1', 'w_e2', 'w_e3', 'w_e4', 'w_e5', 'x_enc'], ['w_out', 'w_d1', 'w_d2', 'w_d3', 'w_d4', 'w_d5', 'w_d6', 'w_d7', 'w_d8', 'w_d9', 'w_d10']];
+  let flowing = false, raf;
+  function pulseLoop() {
+    const live = [];
+    function spawn(chain, delay) {
+      const segs = chain.map(id => svg.querySelector(`path[data-id="${id}"]`)).filter(Boolean);
+      const total = segs.reduce((s, p) => s + p.getTotalLength(), 0);
+      const dot = el('circle', { r: 3.4, class: 'pulse' }, L.pulses);
+      live.push({ segs, total, dot, t0: performance.now() + delay });
+    }
+    const loop = now => {
+      if (!flowing) return;
+      if (live.length < 14 && Math.random() < 0.06) spawn(flowPaths[Math.random() < 0.5 ? 0 : 1], 0);
+      for (let i = live.length - 1; i >= 0; i--) {
+        const p = live[i]; let d = (now - p.t0) * 0.16; if (d < 0) continue;
+        if (d > p.total) { p.dot.remove(); live.splice(i, 1); continue; }
+        let s = 0; while (s < p.segs.length && d > p.segs[s].getTotalLength()) { d -= p.segs[s].getTotalLength(); s++; }
+        const pt = p.segs[Math.min(s, p.segs.length - 1)].getPointAtLength(d);
+        p.dot.setAttribute('cx', pt.x); p.dot.setAttribute('cy', pt.y);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ---------- attention matrix (illustrative weights) ----------
+  const ATT = [ // rows: German output tokens, cols: English input tokens
+    [0.78, 0.06, 0.05, 0.05, 0.06], // Aufmerksamkeit ← Attention
+    [0.08, 0.80, 0.04, 0.04, 0.04], // ist ← is
+    [0.04, 0.05, 0.82, 0.05, 0.04], // alles ← all
+    [0.04, 0.04, 0.06, 0.40, 0.46], // was du brauchst ← you need
+  ];
+  const ROWS = ['Aufmerksamkeit', 'ist', 'alles', 'was du brauchst'];
+  function buildAttn() {
+    const g = $('#attnGrid'); g.innerHTML = ''; g.style.gridTemplateColumns = `92px repeat(${SRC.length}, 1fr)`;
+    g.insertAdjacentHTML('beforeend', '<div></div>' + SRC.map(s => `<div style="text-align:center">${s}</div>`).join(''));
+    ATT.forEach((row, r) => { g.insertAdjacentHTML('beforeend', `<div>${ROWS[r]}</div>` + row.map(w => `<div class="c" style="opacity:${0.08 + w * 0.92}"></div>`).join('')); });
+  }
+
+  // ---------- typing for the listing ----------
+  function type(target, text, speed, done) { let i = 0; const t = $(target); t.innerHTML = '<span class="caret"></span>';
+    const step = () => { i++; t.innerHTML = text.slice(0, i) + '<span class="caret"></span>'; if (i < text.length) timers.push(setTimeout(step, reduced ? 0 : speed)); else done && done(); };
+    step(); }
+
+  // ---------- timeline ----------
+  const nextWords = ['Aufmerksamkeit', 'ist', 'alles', ',', 'was', 'du', 'brauchst', '</s>'];
+  function play() {
+    stop();
+    $('#listing').style.opacity = 1;
+    ['#paperWrap', '#figWrap'].forEach(s => $(s).classList.remove('on'));
+    $('#attn').classList.remove('on'); $('#garage').classList.remove('on');
+    svg.querySelectorAll('.on').forEach(n => { if (!n.matches('[data-id^="pew"]')) n.classList.remove('on'); });
+    $('#meta').textContent = '';
+    type('#typed', 'Attention Is All You Need', 55, () => {
+      $('#meta').textContent = 'arXiv:1706.03762 · Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, Polosukhin';
+      later(1700, () => { $('#listing').style.opacity = 0; $('#paperWrap').classList.add('on'); });
+      later(3600, () => { $('#figWrap').classList.add('on'); });
+      order.forEach((_, i) => later(4200 + i * 1250, () => reveal(i)));
+      later(4200 + order.length * 1250, () => { flowing = true; pulseLoop(); buildAttn(); $('#attn').classList.add('on');
+        nextWords.forEach((w, i) => later(i * 900, () => { outTok.textContent = 'siguiente token → ' + w; })); });
+      later(4200 + order.length * 1250 + 9000, () => $('#garage').classList.add('on'));
+    });
+  }
+  function stop() { timers.splice(0).forEach(clearTimeout); flowing = false; cancelAnimationFrame(raf); L.pulses.innerHTML = ''; }
+  function skip() { stop(); $('#listing').style.opacity = 0; $('#paperWrap').classList.add('on'); $('#figWrap').classList.add('on');
+    order.forEach((_, i) => reveal(i)); buildAttn(); $('#attn').classList.add('on'); flowing = true; pulseLoop(); $('#garage').classList.add('on'); }
+
+  $('#replay').onclick = play; $('#again').onclick = () => $('#garage').classList.remove('on');
+  $('#skip').onclick = skip;
+  $('#start').onclick = () => { $('#garage').querySelector('p').innerHTML = 'El garaje llegará en el prototipo jugable. De momento, esta es la escena de apertura.'; };
+  play();
+})();
+</script>
+</body>
+</html>
