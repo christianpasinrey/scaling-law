@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +12,14 @@ const files = [
   'gpu_gtx1080ti_fe.glb',
   'gpu_titan_v.glb',
 ];
+
+const missing = files.filter((f) => !existsSync(join(src, f)));
+if (missing.length > 0) {
+  for (const f of missing) {
+    console.error(`copy-assets: missing ${f} (expected at ${join(src, f)})`);
+  }
+  process.exit(1);
+}
 
 mkdirSync(dst, { recursive: true });
 for (const f of files) {
