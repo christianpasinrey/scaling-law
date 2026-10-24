@@ -1,5 +1,30 @@
 {
   "translation": {
-    "defaultPriceUsdPerMChars": { "value": 20, "source": "Public translation API rates 2017 (Google Cloud Translation: $20 per million characters)", "approx": true }
+    "defaultPriceUsdPerMChars": {
+      "value": 20,
+      "source": "Public translation API rates 2017 (Google Cloud Translation: $20 per million characters)",
+      "approx": true
+    }
+  },
+  "jobs": {
+    "replicate_paper": {
+      "workP100h": {
+        "value": 96,
+        "source": "https://arxiv.org/abs/1706.03762 §5.2: base model, 8 P100 x 12 h = 96 P100-hours",
+        "approx": false
+      }
+    },
+    "translation_v2": {
+      "workP100h": {
+        "value": 400,
+        "source": "Game-design estimate: a larger production translation model, about 4x the base paper model",
+        "approx": true
+      }
+    },
+    "checkpointEveryH": {
+      "value": 4,
+      "source": "Game-design choice: a checkpoint every 4 hours",
+      "approx": true
+    }
   }
 }

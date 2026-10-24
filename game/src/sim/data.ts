@@ -84,6 +84,7 @@ function world(v: unknown, path: string): WorldData {
     startCashUsd: exact(o.startCashUsd, 10000, `${path}.startCashUsd`),
     circuitWatts: exact(o.circuitWatts, 1800, `${path}.circuitWatts`),
     circuitSafeWatts: exact(o.circuitSafeWatts, 1440, `${path}.circuitSafeWatts`),
+    ambientC: sourced(o.ambientC, `${path}.ambientC`),
     electricityUsdPerKwh: sourced(o.electricityUsdPerKwh, `${path}.electricityUsdPerKwh`),
     failPerGpuDay: sourced(o.failPerGpuDay, `${path}.failPerGpuDay`),
     throttle: {
@@ -107,9 +108,18 @@ function world(v: unknown, path: string): WorldData {
 function products(v: unknown, path: string): ProductsData {
   const o = obj(v, path);
   const tr = obj(o.translation, `${path}.translation`);
+  const jobs = obj(o.jobs, `${path}.jobs`);
+  const job = (k: string): { workP100h: Sourced<number> } => ({
+    workP100h: sourced(obj(jobs[k], `${path}.jobs.${k}`).workP100h, `${path}.jobs.${k}.workP100h`),
+  });
   return {
     translation: {
       defaultPriceUsdPerMChars: sourced(tr.defaultPriceUsdPerMChars, `${path}.translation.defaultPriceUsdPerMChars`),
+    },
+    jobs: {
+      replicate_paper: job('replicate_paper'),
+      translation_v2: job('translation_v2'),
+      checkpointEveryH: sourced(jobs.checkpointEveryH, `${path}.jobs.checkpointEveryH`),
     },
   };
 }

@@ -3,6 +3,11 @@
   "startCashUsd": 10000,
   "circuitWatts": 1800,
   "circuitSafeWatts": 1440,
+  "ambientC": {
+    "value": 25,
+    "source": "approx. game-design estimate: June garage ambient temperature",
+    "approx": true
+  },
   "electricityUsdPerKwh": {
     "value": 0.13,
     "source": "US residential average 2017 (EIA)",

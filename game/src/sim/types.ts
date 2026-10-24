@@ -39,6 +39,8 @@ export interface WorldData {
   startCashUsd: 10000;
   circuitWatts: 1800;
   circuitSafeWatts: 1440;
+  /** Garage ambient temperature; initial GPU temperature. */
+  ambientC: Sourced<number>;
   electricityUsdPerKwh: Sourced<number>;
   /** Interruptions per GPU per day (garage multiplier already applied). */
   failPerGpuDay: Sourced<number>;
@@ -65,8 +67,18 @@ export interface TranslationProductData {
   defaultPriceUsdPerMChars: Sourced<number>;
 }
 
+export interface JobData {
+  workP100h: Sourced<number>;
+}
+
 export interface ProductsData {
   translation: TranslationProductData;
+  jobs: {
+    replicate_paper: JobData;
+    translation_v2: JobData;
+    /** Hours between training checkpoints. */
+    checkpointEveryH: Sourced<number>;
+  };
 }
 
 export interface GameData {
@@ -74,4 +86,105 @@ export interface GameData {
   rigs: RigModel[];
   world: WorldData;
   products: ProductsData;
+}
+
+// ---- Game state shapes (ruling R1: shapes now, behaviour in later tasks) ----
+
+export type Alloc = 'train' | 'serve' | 'rent' | 'idle';
+
+export interface OwnedRig {
+  id: string;
+  model: 'tower_2017' | 'open_frame';
+}
+
+export interface OwnedGpu {
+  id: string;
+  model: string;
+  rigId: string;
+  slot: number;
+  tempC: number;
+  perf: 0 | 0.7 | 1;
+}
+
+export interface PowerState {
+  watts: number;
+  breakerTripped: boolean;
+  weekKwh: number;
+}
+
+export interface TrainingJob {
+  id: 'replicate_paper' | 'translation_v2';
+  workP100h: number;
+  doneP100h: number;
+  checkpointP100h: number;
+  checkpointEveryH: 4;
+  lossCurve: number[];
+  status: 'locked' | 'ready' | 'running' | 'done';
+}
+
+export interface ProductState {
+  priceUsdPerMChars: number;
+  customers: number;
+  demandMCharsH: number;
+  servedMCharsH: number;
+  latencyMs: number;
+  satisfaction: number;
+  weekServedMChars: number;
+  launched: boolean;
+}
+
+export interface Contract {
+  id: string;
+  usd: number;
+  weeksTotal: number;
+  weeksLeft: number;
+  status: 'offered' | 'active' | 'done';
+}
+
+export interface Grant {
+  id: string;
+  p100eq: number;
+  weeksLeft: number;
+  status: 'offered' | 'active' | 'expired';
+}
+
+export interface LedgerWeek {
+  week: number;
+  revenueUsd: number;
+  costsUsd: number;
+  cashEndUsd: number;
+  lines: Record<string, number>;
+}
+
+export interface PulsoItem {
+  id: string;
+  hour: number;
+  cause: 'latency' | 'quality' | 'price' | 'outage' | 'praise' | 'news' | 'warning';
+  text: string;
+  count: number;
+  focus?: { kind: 'gpu' | 'product' | 'power'; id?: string };
+}
+
+export interface GameState {
+  version: 1;
+  seed: number;
+  rng: number;
+  /** Whole hours since the start of the game. */
+  hour: number;
+  cashUsd: number;
+  labName: string;
+  rigs: OwnedRig[];
+  gpus: OwnedGpu[];
+  allocation: Record<string, Alloc>;
+  power: PowerState;
+  jobs: TrainingJob[];
+  product: ProductState;
+  contracts: Contract[];
+  grants: Grant[];
+  reputation: number;
+  ledger: LedgerWeek[];
+  pulso: PulsoItem[];
+  flags: Record<string, boolean>;
+  outcome: null | 'seed_round' | 'bankrupt';
+  round?: { status: 'offered' | 'declined'; offeredHour: number };
 }
