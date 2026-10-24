@@ -4,7 +4,7 @@ export const HOURS_PER_WEEK = 168;
 
 export function newGame(d: GameData, seed: number, labName: string): GameState {
   const j = d.products.jobs;
-  const checkpointEveryH = j.checkpointEveryH.value as 4;
+  const checkpointEveryH = j.checkpointEveryH.value;
   const job = (id: TrainingJob['id'], work: number, status: TrainingJob['status']): TrainingJob => ({
     id,
     workP100h: work,

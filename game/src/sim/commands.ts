@@ -104,6 +104,8 @@ export function applyCommand(s: GameState, d: GameData, c: Command): GameState {
     case 'apply_grant':
       return warn(s, 'unknown_grant', `Beca desconocida: ${c.grantId}.`);
     case 'reset_breaker':
+      // Clears the flag only: if the draw is still over the limit, the next stepPower trips it again.
+      if (s.power.breakerTripped) return { ...s, power: { ...s.power, breakerTripped: false } };
       return warn(s, 'breaker_not_tripped', 'El diferencial no ha saltado.');
     case 'accept_round':
     case 'decline_round':

@@ -64,5 +64,37 @@
       "source": "Game-design scaling of docs/research/03-economy.md §10.3 (stage 1: $2–5M @ $15–25M) down to a 2017 garage lab; 1.5 / (8 + 1.5)",
       "approx": true
     }
+  },
+  "thermal": {
+    "baseC": {
+      "value": 30,
+      "source": "Game-design estimate: idle GPU temperature in a garage tower with 25 C ambient",
+      "approx": true
+    },
+    "perLoadC": {
+      "value": 50,
+      "source": "Game-design estimate: temperature rise of a stock-cooler Pascal GPU from idle to 100 % load",
+      "approx": true
+    },
+    "neighbourTowerC": {
+      "value": 6,
+      "source": "Game-design estimate: extra degrees per neighbouring GPU sharing a closed tower case",
+      "approx": true
+    },
+    "neighbourOpenFrameC": {
+      "value": 2,
+      "source": "Game-design estimate: extra degrees per neighbouring GPU on an open mining frame (free air flow)",
+      "approx": true
+    },
+    "smoothing": {
+      "value": 0.5,
+      "source": "Game-design estimate: fraction of the gap to the target temperature closed each hour",
+      "approx": true
+    },
+    "recoverBelowC": {
+      "value": 84,
+      "source": "Game-design estimate: a GPU shut down by overheating restarts at full performance once it cools below the throttle temperature",
+      "approx": true
+    }
   }
 }

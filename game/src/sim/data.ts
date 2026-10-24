@@ -77,6 +77,7 @@ function rig(v: unknown, path: string): RigModel {
 function world(v: unknown, path: string): WorldData {
   const o = obj(v, path);
   const th = obj(o.throttle, `${path}.throttle`);
+  const th2 = obj(o.thermal, `${path}.thermal`);
   const rent = obj(o.rentalUsdPerDay, `${path}.rentalUsdPerDay`);
   const seed = obj(o.seedRound, `${path}.seedRound`);
   return {
@@ -87,6 +88,14 @@ function world(v: unknown, path: string): WorldData {
     ambientC: sourced(o.ambientC, `${path}.ambientC`),
     electricityUsdPerKwh: sourced(o.electricityUsdPerKwh, `${path}.electricityUsdPerKwh`),
     failPerGpuDay: sourced(o.failPerGpuDay, `${path}.failPerGpuDay`),
+    thermal: {
+      baseC: sourced(th2.baseC, `${path}.thermal.baseC`),
+      perLoadC: sourced(th2.perLoadC, `${path}.thermal.perLoadC`),
+      neighbourTowerC: sourced(th2.neighbourTowerC, `${path}.thermal.neighbourTowerC`),
+      neighbourOpenFrameC: sourced(th2.neighbourOpenFrameC, `${path}.thermal.neighbourOpenFrameC`),
+      smoothing: sourced(th2.smoothing, `${path}.thermal.smoothing`),
+      recoverBelowC: sourced(th2.recoverBelowC, `${path}.thermal.recoverBelowC`),
+    },
     throttle: {
       throttleC: sourced(th.throttleC, `${path}.throttle.throttleC`),
       throttleFactor: sourced(th.throttleFactor, `${path}.throttle.throttleFactor`),
@@ -119,7 +128,10 @@ function products(v: unknown, path: string): ProductsData {
     jobs: {
       replicate_paper: job('replicate_paper'),
       translation_v2: job('translation_v2'),
-      checkpointEveryH: sourced(jobs.checkpointEveryH, `${path}.jobs.checkpointEveryH`),
+      checkpointEveryH: {
+        ...sourced(jobs.checkpointEveryH, `${path}.jobs.checkpointEveryH`),
+        value: exact(obj(jobs.checkpointEveryH, `${path}.jobs.checkpointEveryH`).value, 4, `${path}.jobs.checkpointEveryH.value`),
+      },
     },
   };
 }

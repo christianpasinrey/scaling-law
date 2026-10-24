@@ -111,6 +111,12 @@ describe('loadData', () => {
     expect(() => loadData({ hardware: null, world: {}, products: {} })).toThrow(DataError);
   });
 
+  it('checkpointEveryH must be exactly 4', () => {
+    const a = raw() as any;
+    a.products.jobs.checkpointEveryH.value = 6;
+    expect(() => loadData(a)).toThrow(/checkpointEveryH.value/);
+  });
+
   it("every docs/research source points to an existing file", () => {
     const found: string[] = [];
     const walk = (v: unknown): void => {

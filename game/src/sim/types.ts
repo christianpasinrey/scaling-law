@@ -49,6 +49,20 @@ export interface WorldData {
     throttleFactor: Sourced<number>;
     shutdownC: Sourced<number>;
   };
+  thermal: {
+    /** Target temperature at zero load, no neighbours. */
+    baseC: Sourced<number>;
+    /** Extra degrees at 100 % load. */
+    perLoadC: Sourced<number>;
+    /** Extra degrees per other GPU in the same closed tower. */
+    neighbourTowerC: Sourced<number>;
+    /** Extra degrees per other GPU in the same open frame. */
+    neighbourOpenFrameC: Sourced<number>;
+    /** Fraction of the gap to the target closed per hour. */
+    smoothing: Sourced<number>;
+    /** A shut-down GPU restarts (perf 1) once cooler than this. */
+    recoverBelowC: Sourced<number>;
+  };
   rentalUsdPerDay: {
     /** Per 1080 Ti while the 2017-2018 boom lasts. */
     boom: Sourced<number>;
@@ -77,7 +91,7 @@ export interface ProductsData {
     replicate_paper: JobData;
     translation_v2: JobData;
     /** Hours between training checkpoints. */
-    checkpointEveryH: Sourced<number>;
+    checkpointEveryH: Sourced<4>;
   };
 }
 
