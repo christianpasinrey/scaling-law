@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan M1 · Garaje jugable</title>
+<script src="../design/assets/mermaid.min.js"></script>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#5b6672; --line:#e3e7ec; --card:#f6f8fa; --accent:#0a8f72; --code:#f1f3f5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9aa7b4; --line:#252c35; --card:#151b23; --accent:#3fd6b0; --code:#1a212b; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 28px 22px 80px; }
+  h1 { margin: 0 0 6px; } h2 { margin: 40px 0 8px; border-top: 1px solid var(--line); padding-top: 10px; } h3 { margin: 26px 0 6px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.45; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 10px 0; }
+  th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; } th { background: var(--card); }
+  .task { border-left: 4px solid var(--accent); padding-left: 14px; margin: 26px 0; }
+  .step { margin: 4px 0; } .step::before { content: "☐ "; color: var(--accent); }
+  .mermaid { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+  .src { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Plan de implementación · M1 Garaje jugable</h1>
+<p class="meta">Scaling Law · 25 oct 2026 · Spec: <code>docs/design/2026-10-25-scaling-law-gdd.html</code> (sección 17, «Hito M1»)</p>
+
+<div class="card"><b>Para agentes:</b> sub-skill obligatoria <code>superpowers:subagent-driven-development</code> (recomendada) o <code>superpowers:executing-plans</code>.
+Los pasos son casillas ☐. Cada tarea termina en commit sin firma ni Co-Authored-By (decisión del usuario) y push a <code>main</code>.</div>
+
+<p><b>Objetivo:</b> una partida jugable en el navegador que empieza con la apertura del paper Transformer y termina cuando el jugador cierra su primera ronda o quiebra,
+jugando en un garaje 3D con 1–6 GPUs reales de 2017–2018.</p>
+<p><b>Arquitectura:</b> simulación pura y determinista en TypeScript (sin DOM) que corre en un Web Worker; el hilo principal solo pinta (Three.js para garaje y cerebro,
+DOM para HUD/Pulso/fichas) y envía órdenes. Los datos del mundo (hardware, precios, textos) viven en JSON con fuente por cada cifra.</p>
+<p><b>Stack:</b> Vite 8, TypeScript ~6.0, three ^0.186, Vitest 5 (mismas versiones que <code>seed-to-cup</code>), <code>fake-indexeddb</code> solo en tests. Sin framework de UI.</p>
+
+<pre class="mermaid">
+flowchart LR
+  subgraph W[Worker · game/src/sim]
+    RNG[rng.ts] --> ST[state.ts]
+    DATA[(data/*.json)] --> ST
+    ST --> CLK[clock.ts<br/>pasos de 1 h · liquidación semanal]
+    CLK --> PWR[power.ts] & TRN[training.ts] & SRV[serving.ts] & ECO[economy.ts] & PUL[pulso.ts]
+    PROG[progression.ts] --> CLK
+  end
+  W <-- protocol.ts --> M
+  subgraph M[Hilo principal · game/src]
+    BR[bridge.ts] --> HUD[ui/*] & GAR[render/garage.ts] & BRN[render/brain.ts]
+    SAV[save.ts] --- BR
+    INTRO[intro/] --> BR
+  end
+</pre>
+
+<h2>Restricciones globales</h2>
+<ul>
+  <li>Web pura, publicada en GitHub Pages bajo <code>/scaling-law/</code>; sin Electron ni backend.</li>
+  <li>Inicio de partida: <b>2017-06-12 17:57 UTC</b>, publicación de arXiv 1706.03762. Fin del M1: primera ronda cerrada o quiebra.</li>
+  <li>Simulación determinista: misma semilla + mismas órdenes ⇒ mismo estado, bit a bit. Prohibido <code>Math.random</code> y <code>Date.now</code> dentro de <code>src/sim/</code>.</li>
+  <li>Economía liquidada cada semana; operación (entrenamiento, temperatura, potencia, servicio) en pasos de 1 hora (168 por semana).</li>
+  <li>Cada cifra de <code>data/*.json</code> lleva <code>source</code> (URL o <code>docs/research/…</code>) y <code>approx: true|false</code>; las aproximadas se muestran como «aprox.» en las fichas.</li>
+  <li>Moneda: dólares (USD), como el GDD. Textos de interfaz en español; claves de texto en <code>data/i18n.es.json</code> para traducir luego.</li>
+  <li>Hardware y marcas reales; el laboratorio del jugador es ficticio (el jugador lo nombra).</li>
+  <li>Carga inicial &lt; 10 MB; arte provisional aceptado donde falte (habitación del garaje = geometría simple en código).</li>
+  <li>Ninguna ficha didáctica afirma algo falso; si simplifica, lo dice.</li>
+  <li>Modo de movimiento reducido respetado (<code>prefers-reduced-motion</code>).</li>
+</ul>
+
+<h2>Valores fijados del spec y de la investigación</h2>
+<table>
+  <tr><th>Valor</th><th>Cifra</th><th>Fuente / nota</th></tr>
+  <tr><td>Caja inicial</td><td>10.000 $</td><td>GDD §5</td></tr>
+  <tr><td>Modelo base del paper</td><td>8 × P100 · 12 h = <b>96 P100-horas</b> (100.000 pasos)</td><td>arXiv 1706.03762 §5.2</td></tr>
+  <tr><td>GTX 1080 Ti</td><td>699 $, 250 W, 11 GB, rendimiento = <b>1,0 P100-equivalentes</b> (aprox.)</td><td>docs/research/01; da ~4 días como en la apertura</td></tr>
+  <tr><td>Titan V (desde 2017-12-07)</td><td>2.999 $, 250 W, 12 GB, <b>2,5 P100-eq</b> (aprox., Tensor Cores)</td><td>docs/research/01</td></tr>
+  <tr><td>Bastidor abierto (desde 2018-01-01)</td><td>350 $ aprox., admite 6 GPUs, 2 fuentes</td><td>asset rig_02</td></tr>
+  <tr><td>Circuito del garaje</td><td>15 A × 120 V = 1.800 W; uso continuo seguro 80 % = <b>1.440 W</b>; por encima de 1.800 W salta el diferencial</td><td>docs/research/02 §1 (aprox.)</td></tr>
+  <tr><td>Consumo base del PC</td><td>150 W (CPU, placa, discos)</td><td>aprox.</td></tr>
+  <tr><td>Electricidad residencial</td><td>0,13 $/kWh</td><td>aprox. EE. UU. 2017</td></tr>
+  <tr><td>Temperatura de throttling</td><td>GPU ≥ 84 °C ⇒ rendimiento ×0,7; ≥ 91 °C ⇒ apagado de esa GPU</td><td>aprox., Pascal</td></tr>
+  <tr><td>Fallos en el garaje</td><td>4,7×10⁻⁴ interrupciones / GPU / día × 3 (consumo, sin operaciones)</td><td>docs/research/02 §10.1 (Llama 3) ×3 diseño</td></tr>
+  <tr><td>Producto de traducción</td><td>precio por defecto 20 $ / millón de caracteres</td><td>tarifa pública de APIs de traducción 2017 (aprox.)</td></tr>
+  <tr><td>Alquiler de GPU</td><td>4 $/día por 1080 Ti (boom 2017–2018), 1 $/día después</td><td>aprox.</td></tr>
+  <tr><td>Ronda semilla</td><td>1,5 M$ a 8 M$ de valoración previa (dilución 15,8 %)</td><td>docs/research/03 §10.3 escalado a 2017 (aprox.)</td></tr>
+</table>
+
+<h2>Foco de revisión (lo que el spec implica y es fácil romper)</h2>
+<ol>
+  <li><b>Pestaña en segundo plano / reanudar tras horas</b>: el reloj no debe «recuperar» semanas perdidas al volver; se pausa. → test en Tarea 9.</li>
+  <li><b>Guardado corrupto o de otra versión</b>: cargar un guardado inválido muestra aviso y ofrece partida nueva, nunca deja el juego roto. → test en Tarea 10.</li>
+  <li><b>Caja negativa por compras simultáneas</b>: comprar varias GPUs en el mismo tick no puede dejar la caja por debajo de 0. → test en Tarea 6.</li>
+  <li><b>Diferencial salta durante un entrenamiento</b>: se pierde el progreso desde el último checkpoint, no todo. → test en Tarea 5.</li>
+  <li><b>Todas las GPUs a servir, 0 a entrenar</b> (o al revés): ningún NaN ni división por cero en barras y tasas. → test en Tarea 7.</li>
+</ol>
+
+<h2>Estructura de ficheros</h2>
+<pre>
+game/
+  index.html · vite.config.ts · tsconfig.json · package.json
+  public/assets/            ← GLB copiados de blender/export por scripts/copy-assets.mjs
+  scripts/copy-assets.mjs
+  data/  hardware.json · world.json · products.json · pulso.es.json · learn.es.json · i18n.es.json
+  src/
+    sim/  rng.ts · types.ts · data.ts · state.ts · clock.ts · power.ts · training.ts
+          serving.ts · economy.ts · pulso.ts · progression.ts · commands.ts · index.ts
+    worker.ts · protocol.ts · bridge.ts · save.ts · main.ts
+    intro/ intro.ts · intro.css          ← portado de prototypes/01-intro-transformer
+    render/ scene.ts · garage.ts · flow.ts · brain.ts
+    ui/ hud.ts · shop.ts · allocation.ts · jobs.ts · pulso.ts · learn.ts · endscreen.ts · ui.css
+  test/ (un fichero por módulo de sim + save + bridge)
+.github/workflows/pages.yml
+</pre>
+
+<!-- ======================================================= -->
+<h2>Tareas</h2>
+
+<div class="task">
+<h3>Tarea 1 · Proyecto base y despliegue</h3>
+<p><b>Ficheros:</b> crear <code>game/package.json</code>, <code>vite.config.ts</code> (<code>base: '/scaling-law/'</code>, worker <code>format: 'es'</code>), <code>tsconfig.json</code> (strict),
+<code>index.html</code>, <code>src/main.ts</code>, <code>scripts/copy-assets.mjs</code>, <code>test/smoke.test.ts</code>, <code>.github/workflows/pages.yml</code>.</p>
+<p><b>Produce:</b> scripts <code>npm run dev | build | test | assets</code>; <code>assets</code> copia <code>blender/export/{rig_01_tower_2017,rig_02_open_frame,gpu_gtx1080ti_fe,gpu_titan_v}.glb</code> a <code>public/assets/</code>.</p>
+<div class="step">Test <code>smoke.test.ts</code>: <code>expect(1 + 1).toBe(2)</code> y que <code>import('../src/sim/index')</code> no lance (vacío por ahora).</div>
+<div class="step"><code>npm test</code> → PASS. <code>npm run build</code> → genera <code>dist/</code> sin errores.</div>
+<div class="step">Workflow Pages: en push a <code>main</code> con cambios en <code>game/**</code>: <code>npm ci</code> (si falla por deps opcionales de Windows usar <code>npm install</code>, ver memoria del proyecto), assets, test, build, deploy de <code>game/dist</code>.</div>
+<div class="step">Commit «game: Vite + TS + Three scaffold and Pages deploy» y push; comprobar con <code>gh run watch</code> que el deploy termina en verde y que <code>https://christianpasinrey.github.io/scaling-law/</code> responde 200.</div>
+</div>
+
+<div class="task">
+<h3>Tarea 2 · Azar determinista, tipos y datos del mundo</h3>
+<p><b>Ficheros:</b> <code>src/sim/rng.ts</code>, <code>types.ts</code>, <code>data.ts</code>, <code>data/hardware.json</code>, <code>world.json</code>, <code>products.json</code>; tests <code>test/rng.test.ts</code>, <code>test/data.test.ts</code>.</p>
+<p><b>Produce:</b></p>
+<pre>
+// rng.ts — mulberry32
+export interface Rng { next(): number /* [0,1) */; int(min: number, max: number): number; state(): number }
+export function createRng(seed: number): Rng
+export function restoreRng(state: number): Rng
+
+// types.ts
+export interface Sourced<T> { value: T; source: string; approx: boolean }
+export interface GpuModel { id: string; name: string; releaseDate: string /* ISO */; priceUsd: Sourced&lt;number&gt;;
+  watts: Sourced&lt;number&gt;; memGb: number; p100eq: Sourced&lt;number&gt;; glb: string; learnId: string }
+export interface RigModel { id: 'tower_2017' | 'open_frame'; name: string; releaseDate: string; priceUsd: Sourced&lt;number&gt;;
+  gpuSlots: number; psuWatts: number; baseWatts: number; glb: string }
+export interface WorldData { startIso: '2017-06-12T17:57:00Z'; startCashUsd: 10000; circuitWatts: 1800;
+  circuitSafeWatts: 1440; electricityUsdPerKwh: Sourced&lt;number&gt;; failPerGpuDay: Sourced&lt;number&gt; }
+// data.ts
+export function loadData(raw: { hardware: unknown; world: unknown; products: unknown }): GameData   // valida y lanza DataError
+export class DataError extends Error {}
+</pre>
+<div class="step">Tests rng: misma semilla ⇒ mismas 1.000 salidas; <code>restoreRng(r.state())</code> continúa la misma secuencia; <code>int(1,6)</code> en [1,6].</div>
+<div class="step">Tests data: el JSON real carga; un GPU sin <code>source</code> ⇒ <code>DataError</code>; <code>releaseDate</code> de Titan V = <code>2017-12-07</code>; todas las cifras de la tabla «Valores fijados» coinciden.</div>
+<div class="step">Implementar y pasar tests. Commit «sim: deterministic rng, types and sourced world data».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 3 · Estado, reloj y órdenes</h3>
+<p><b>Ficheros:</b> <code>src/sim/state.ts</code>, <code>clock.ts</code>, <code>commands.ts</code>, <code>index.ts</code>; test <code>test/clock.test.ts</code>.</p>
+<p><b>Produce:</b></p>
+<pre>
+export interface GameState { version: 1; seed: number; rng: number; hour: number /* horas desde el inicio */;
+  cashUsd: number; labName: string; rigs: OwnedRig[]; gpus: OwnedGpu[]; allocation: Record&lt;string,'train'|'serve'|'rent'|'idle'&gt;;
+  power: PowerState; jobs: TrainingJob[]; product: ProductState; contracts: Contract[]; grants: Grant[];
+  reputation: number; ledger: LedgerWeek[]; pulso: PulsoItem[]; flags: Record&lt;string, boolean&gt;; outcome: null | 'seed_round' | 'bankrupt' }
+export function newGame(data: GameData, seed: number, labName: string): GameState   // 1 torre + 1 GTX 1080 Ti, caja 10.000 − 0 (ya pagados)
+export type Command = { t:'buy_gpu'; model: string; rigId: string } | { t:'buy_rig'; model: RigModel['id'] }
+  | { t:'allocate'; gpuId: string; to: 'train'|'serve'|'rent'|'idle' } | { t:'start_job'; jobId: string }
+  | { t:'accept_contract'; contractId: string } | { t:'apply_grant'; grantId: string } | { t:'set_price'; usdPerMChars: number }
+  | { t:'reset_breaker' } | { t:'accept_round' } | { t:'decline_round' }
+export function applyCommand(s: GameState, d: GameData, c: Command): GameState            // inmutable; inválido ⇒ mismo estado + Pulso de aviso
+export function advance(s: GameState, d: GameData, hours: number): GameState              // llama a los sistemas por hora y liquida economía cada 168 h
+export function dateOf(s: GameState): string                                               // ISO a partir de startIso + hour
+</pre>
+<div class="step">Tests: <code>dateOf(newGame(...))</code> = <code>2017-06-12T17:57:00.000Z</code>; <code>advance(s, d, 168)</code> añade exactamente 1 entrada a <code>ledger</code>; dos partidas con la misma semilla y órdenes ⇒ <code>JSON.stringify</code> idéntico tras 4 semanas; con <code>outcome ≠ null</code>, <code>advance</code> no cambia el estado.</div>
+<div class="step">Implementar con los sistemas como funciones vacías (las rellenan las tareas 4–8). Commit «sim: state, hourly clock, weekly settlement, commands».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 4 · Potencia, temperatura y diferencial</h3>
+<p><b>Ficheros:</b> <code>src/sim/power.ts</code>; test <code>test/power.test.ts</code>.</p>
+<p><b>Produce:</b> <code>stepPower(s, d, rng): GameState</code> — calcula vatios = base de cada rig + Σ (vatios GPU × carga), temperaturas por GPU, throttling y diferencial;
+<code>gpuPerfFactor(g: OwnedGpu): number</code> (1, 0,7 o 0).</p>
+<p>Modelo térmico (una línea): por hora, <code>T += (Tobjetivo − T) × 0,5</code>, con <code>Tobjetivo = 30 + 50 × carga + 6 × (GPUs vecinas en la misma torre − 1)</code> °C; en el bastidor abierto el término de vecinas es 2 en vez de 6.</p>
+<div class="step">Tests: 1 GPU al 100 % no supera 84 °C; 3 GPUs en la torre al 100 % ⇒ alguna ≥ 84 °C y <code>gpuPerfFactor</code> 0,7; en el bastidor 3 GPUs no hacen throttling;
+consumo &gt; 1.800 W ⇒ <code>power.breakerTripped = true</code>, todas las GPUs a 0 y aviso en Pulso; <code>reset_breaker</code> con consumo previsto &gt; 1.800 W vuelve a saltar en el siguiente paso;
+energía de la semana (kWh) × 0,13 $ entra en el ledger.</div>
+<div class="step">Implementar, tests en verde, commit «sim: power, thermals, breaker».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 5 · Entrenamiento con fallos y checkpoints</h3>
+<p><b>Ficheros:</b> <code>src/sim/training.ts</code>; test <code>test/training.test.ts</code>.</p>
+<p><b>Produce:</b></p>
+<pre>
+export interface TrainingJob { id: 'replicate_paper' | 'translation_v2'; workP100h: number; doneP100h: number;
+  checkpointP100h: number; checkpointEveryH: 4; lossCurve: number[]; status: 'locked'|'ready'|'running'|'done' }
+export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState
+export function lossAt(fraction: number): number   // curva didáctica: 9,0 · (1 − f)^1,6 + 1,8  (aprox. forma, no datos del paper)
+</pre>
+<p><code>replicate_paper</code> = 96 P100-h; <code>translation_v2</code> = 400 P100-h (se desbloquea al terminar el primero). Avance por hora = Σ p100eq × perfFactor de las GPUs en «train».
+Fallo por hora y GPU = <code>failPerGpuDay × 3 / 24</code> con el rng: vuelve <code>doneP100h</code> al último checkpoint.</p>
+<div class="step">Tests: 1 GTX 1080 Ti sin fallos (semilla elegida) termina <code>replicate_paper</code> en 96 h ± 1; con 2 GPUs en 48 h ± 1; un fallo forzado (rng falso) devuelve el progreso al checkpoint y no a 0 (foco de revisión 4);
+el salto del diferencial también vuelve al checkpoint; al terminar: <code>reputation += 15</code>, Pulso «Has replicado el paper» y <code>translation_v2</code> pasa a <code>ready</code>.</div>
+<div class="step">Implementar, tests en verde, commit «sim: training jobs, failures, checkpoints».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 6 · Economía y fuentes de ingreso de la era</h3>
+<p><b>Ficheros:</b> <code>src/sim/economy.ts</code>, <code>data/products.json</code>; test <code>test/economy.test.ts</code>.</p>
+<p><b>Produce:</b> <code>settleWeek(s, d, rng): GameState</code> (ingresos y gastos de la semana en <code>ledger</code>), <code>offerContracts(s, d, rng)</code>, <code>offerGrants(s, d)</code>.</p>
+<table>
+  <tr><th>Fuente</th><th>Regla M1</th></tr>
+  <tr><td>Producto de traducción</td><td>Ingresos = caracteres servidos (Tarea 7) × precio; disponible tras <code>replicate_paper</code>.</td></tr>
+  <tr><td>Consultoría</td><td>Cada 4 semanas 0–2 ofertas: 3.000–12.000 $, 2–6 semanas; mientras dura, <b>la investigación avanza ×0,5</b> (los fundadores no investigan).</td></tr>
+  <tr><td>Alquiler de GPUs</td><td>GPU en «rent»: 4 $/día hasta 2018-03-31, 1 $/día después (caída cripto); no entrena ni sirve.</td></tr>
+  <tr><td>Subvención de cómputo</td><td>Con reputación ≥ 15: oferta de 500 horas V100 en la nube (2,5 P100-eq) durante 8 semanas, condición «publicar resultado»; suma al entrenamiento como GPU virtual.</td></tr>
+  <tr><td>Gastos</td><td>Electricidad (Tarea 4); compras al instante.</td></tr>
+</table>
+<div class="step">Tests: comprar con caja insuficiente se rechaza y la caja nunca baja de 0 aunque lleguen 3 compras en el mismo tick (foco 3); consultoría activa ⇒ entrenamiento al 50 %;
+alquiler de 1 GPU 7 días en junio 2017 = 28 $; caja &lt; 0 tras liquidar durante 4 semanas seguidas ⇒ <code>outcome = 'bankrupt'</code>; la subvención caduca a las 8 semanas.</div>
+<div class="step">Implementar, tests en verde, commit «sim: era revenue sources, weekly settlement, bankruptcy».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 7 · Servir clientes</h3>
+<p><b>Ficheros:</b> <code>src/sim/serving.ts</code>; test <code>test/serving.test.ts</code>.</p>
+<p><b>Produce:</b> <code>stepServing(s, d, rng): GameState</code> con <code>ProductState { priceUsdPerMChars; customers; demandMCharsH; servedMCharsH; latencyMs; satisfaction }</code>.</p>
+<p>Capacidad = Σ GPUs en «serve» × 40 M caracteres/h por P100-eq (aprox., traducción NMT 2017). Demanda = clientes × 0,05 M caracteres/h. Clientes crecen +3 %/semana × satisfacción,
+con elasticidad <code>(20 / precio)^1,3</code>; cada versión de modelo terminado sube la calidad. Si demanda &gt; capacidad: latencia sube y satisfacción baja.</p>
+<div class="step">Tests: 0 GPUs en «serve» con clientes ⇒ servido 0, latencia con valor finito máximo, sin NaN (foco 5); 0 clientes ⇒ satisfacción definida; subir precio a 40 $ reduce el crecimiento frente a 20 $;
+1 GPU sirve hasta 800 clientes sin saturar.</div>
+<div class="step">Implementar, tests en verde, commit «sim: translation product serving».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 8 · Pulso y progresión</h3>
+<p><b>Ficheros:</b> <code>src/sim/pulso.ts</code>, <code>progression.ts</code>, <code>data/pulso.es.json</code>; tests <code>test/pulso.test.ts</code>, <code>test/progression.test.ts</code>.</p>
+<p><b>Produce:</b> <code>emitPulso(s, d, rng): GameState</code> — mensajes de plantilla elegidos por causa (<code>latency</code>, <code>quality</code>, <code>price</code>, <code>outage</code>, <code>praise</code>, <code>news</code>),
+cada uno con <code>{ id, hour, cause, text, count, focus?: { kind: 'gpu'|'product'|'power'; id?: string } }</code>; repetidos de la misma causa en 24 h se agrupan (<code>count++</code>); máximo 3 nuevos por día.
+<code>stepProgression(s, d)</code>: noticia de la Titan V el 2017-12-07; oferta de ronda semilla cuando <code>replicate_paper</code> hecho, ≥ 300 clientes y reputación ≥ 30 (aceptar ⇒ +1,5 M$, <code>outcome = 'seed_round'</code>).</p>
+<div class="step">Tests: 50 eventos de latencia en un día ⇒ 1 mensaje con <code>count = 50</code>; nunca más de 3 nuevos por día; cada mensaje tiene <code>focus</code> coherente con su causa;
+la ronda aparece solo cuando se cumplen las tres condiciones; <code>decline_round</code> la retira y vuelve a ofrecerse a las 8 semanas.</div>
+<div class="step">Implementar, tests en verde, commit «sim: Pulso feed and M1 progression».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 9 · Worker, protocolo y reloj en tiempo real</h3>
+<p><b>Ficheros:</b> <code>src/protocol.ts</code>, <code>worker.ts</code>, <code>bridge.ts</code>; test <code>test/bridge.test.ts</code>.</p>
+<pre>
+// protocol.ts
+export type ToWorker = { t:'init'; state: GameState } | { t:'cmd'; cmd: Command } | { t:'speed'; x: 0|1|2|4 } | { t:'tick'; realMs: number }
+export type FromWorker = { t:'state'; state: GameState }
+// bridge.ts
+export class SimBridge { constructor(worker: WorkerLike); start(s: GameState): void; send(c: Command): void; setSpeed(x: 0|1|2|4): void;
+  onState(cb: (s: GameState) =&gt; void): void }
+</pre>
+<p>Ritmo: a ×1 una semana = 40 s reales ⇒ 4,2 horas de juego por segundo. El hilo principal manda <code>tick</code> con los ms reales transcurridos, <b>limitado a 1.000 ms por tick</b>.
+<code>visibilitychange</code> oculto ⇒ <code>speed 0</code>. Durante un salto del diferencial la velocidad efectiva se limita a ×1.</p>
+<div class="step">Tests (worker falso en memoria): <code>tick realMs=60000</code> avanza como 1.000 ms, no un minuto (foco 1); <code>speed 0</code> no avanza; una orden llega antes del siguiente estado.</div>
+<div class="step">Implementar, tests en verde, commit «game: sim worker, protocol and real-time clock».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 10 · Guardado</h3>
+<p><b>Ficheros:</b> <code>src/save.ts</code>; test <code>test/save.test.ts</code> (con <code>fake-indexeddb</code>).</p>
+<p><b>Produce:</b> <code>saveGame(s): Promise&lt;void&gt;</code> (IndexedDB, clave <code>slot-1</code>, cada semana de juego y al cerrar la pestaña),
+<code>loadGame(): Promise&lt;{ ok: true; state: GameState } | { ok: false; reason: 'none'|'corrupt'|'version' }&gt;</code>,
+<code>exportSave(s): Blob</code>, <code>importSave(file: File)</code> con la misma respuesta que <code>loadGame</code>.</p>
+<div class="step">Tests: guardar y cargar devuelve un estado idéntico; JSON truncado ⇒ <code>corrupt</code>; <code>version: 99</code> ⇒ <code>version</code>; sin guardado ⇒ <code>none</code> (foco 2). La UI (Tarea 13) ofrece «Partida nueva» en los tres casos.</div>
+<div class="step">Implementar, tests en verde, commit «game: save, load, export and import».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 11 · Garaje 3D con flujo de energía</h3>
+<p><b>Ficheros:</b> <code>src/render/scene.ts</code>, <code>garage.ts</code>, <code>flow.ts</code>; test <code>test/slots.test.ts</code>.</p>
+<p><b>Produce:</b> <code>createScene(canvas): SceneCtx</code>; <code>GarageView.update(s: GameState)</code>: habitación simple (suelo de hormigón, paredes, una bombilla, enchufe y regleta en la pared),
+la torre <code>rig_01_tower_2017.glb</code> y, si se compra, el bastidor <code>rig_02_open_frame.glb</code>; cada GPU comprada se instancia en su <code>SLOT_gpu_n</code> con su GLB;
+<code>flow.ts</code> sustituye el material de las mallas con extras <code>flow_u_start/flow_u_end</code> por un shader de pulsos (velocidad ∝ vatios de esa línea, color ámbar si &gt; 80 % del circuito,
+apagado si el diferencial saltó). LEDs <code>LED_*</code> encendidos según estado. Clic en una GPU ⇒ evento <code>select:{kind:'gpu', id}</code>.</p>
+<div class="step">Test <code>slots.test.ts</code> (sin WebGL): <code>slotFor(rig, index)</code> devuelve <code>SLOT_gpu_0</code>…<code>SLOT_gpu_5</code> y lanza al pasar del máximo del rig.</div>
+<div class="step">Verificación manual con Playwright: <code>npm run dev</code>, partida nueva, captura del garaje con la torre y una GPU dentro; comprar segunda GPU ⇒ aparece; forzar &gt; 1.800 W ⇒ los pulsos se apagan.</div>
+<div class="step">Commit «render: 3D garage with GPU slots and power flow shader».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 12 · Cerebro mínimo</h3>
+<p><b>Ficheros:</b> <code>src/render/brain.ts</code>; test <code>test/brainLayout.test.ts</code>.</p>
+<p><b>Produce:</b> <code>brainLayout(arch: 'transformer_2017', gpuIds: string[]): BrainNode[]</code> — los bloques de la Figura 1 (6 capas de codificador y 6 de decodificador agrupadas como en la apertura),
+cada nodo con <code>gpuId</code> asignado repartiendo capas consecutivas entre las GPUs en «train» o «serve» (paralelismo de pipeline); <code>BrainView</code> en un canvas superpuesto
+(miniatura 320×220 abajo a la derecha, ampliable a pantalla completa con fondo atenuado) dibujado con Three.js ortográfico: nodos instanciados, aristas en <code>LineSegments</code>,
+pulsos por shader. Modo inferencia (pulsos de abajo arriba, ritmo ∝ caracteres servidos) y modo entrenamiento (ola arriba y ola de vuelta, barra de loss con <code>lossAt</code>).
+Nodo de GPU con throttling ámbar, apagada gris.</p>
+<div class="step">Tests: 1 GPU ⇒ todos los nodos con la misma <code>gpuId</code>; 2 GPUs ⇒ el codificador en una y el decodificador en otra; 3 GPUs ⇒ reparto 4/4/4 capas;
+0 GPUs ⇒ nodos con <code>gpuId: null</code> sin lanzar.</div>
+<div class="step">Verificación manual: miniatura visible, ampliar, cambiar una GPU de «serve» a «train» cambia de modo y de color.</div>
+<div class="step">Commit «render: minimal brain mapped on GPUs with inference and training modes».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 13 · HUD, paneles, Pulso y fichas de aprender</h3>
+<p><b>Ficheros:</b> <code>src/ui/*.ts</code>, <code>ui.css</code>, <code>data/learn.es.json</code>, <code>data/i18n.es.json</code>.</p>
+<ul>
+  <li><b>HUD</b>: fecha (<code>dateOf</code>), velocidad (pausa ×1 ×2 ×4, teclas espacio/1/2/3), caja, saldo de la última semana, vatios usados / 1.440 / 1.800 con barra, reputación.</li>
+  <li><b>Tienda</b>: GTX 1080 Ti siempre; Titan V desde 2017-12-07; bastidor desde 2018-01-01; precio y ficha «saber más».</li>
+  <li><b>Asignación</b>: por GPU, botones Entrenar / Servir / Alquilar / Parada con temperatura y factor de rendimiento.</li>
+  <li><b>Trabajos</b>: entrenamientos con barra, curva de loss y checkpoints; contratos de consultoría; subvenciones; precio del producto.</li>
+  <li><b>Pulso</b>: panel plegable; clic en un mensaje ⇒ selecciona su <code>focus</code> (resalta GPU, abre producto o potencia).</li>
+  <li><b>Fichas de aprender</b> (3 niveles: frase · porqué · fórmula/paper) para: GPU, VRAM, P100-equivalente, entrenamiento, loss, checkpoint, inferencia, throttling, diferencial,
+      kWh, alquiler de cómputo, ronda de financiación, dilución. Se abren al pulsar «?» y la primera vez que aparece el concepto.</li>
+</ul>
+<div class="step">Verificación manual con Playwright: recorrido completo de una semana usando solo ratón y otra solo teclado; capturas del HUD a 1440×900 y 390×844 sin desbordes.</div>
+<div class="step">Commit «ui: HUD, shop, allocation, jobs, Pulso and learn cards».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 14 · Apertura, objetivo y pantalla de cierre</h3>
+<p><b>Ficheros:</b> <code>src/intro/intro.ts</code>, <code>intro.css</code> (portar <code>prototypes/01-intro-transformer/index.html</code> a módulo), <code>src/ui/endscreen.ts</code>, <code>src/main.ts</code>.</p>
+<ul>
+  <li>Flujo: apertura → «Empezar en el garaje» pide nombre del laboratorio → <code>newGame</code> (semilla aleatoria guardada en el estado) → garaje. Si hay guardado: «Continuar» o «Partida nueva».</li>
+  <li>Objetivo visible: «Replicar el paper» → «Lanzar tu API de traducción» → «Conseguir 300 clientes y reputación 30» → oferta de ronda.</li>
+  <li>Cierre M1: con <code>seed_round</code>, resumen (fecha, caja, GPUs, clientes, horas entrenadas, comparación «en la realidad, en junio de 2018…») y «Continuará en M2»;
+      con <code>bankrupt</code>, resumen y «Volver a intentarlo».</li>
+</ul>
+<div class="step">Verificación manual: partida completa a ×4 con una estrategia razonable llega a la ronda; otra que solo compra GPUs sin ingresos quiebra; ambas pantallas se ven bien.</div>
+<div class="step">Commit «game: opening, M1 objectives and end screens».</div>
+</div>
+
+<div class="task">
+<h3>Tarea 15 · Equilibrado, publicación y prueba</h3>
+<p><b>Ficheros:</b> <code>test/balance.test.ts</code>, <code>README.md</code> (sección «Jugar»).</p>
+<p><b>Produce:</b> <code>simulateStrategy(name: 'balanced'|'all_train'|'all_rent'|'consulting_heavy', seed): { outcome; weeks }</code> en el test, usando solo <code>applyCommand</code> y <code>advance</code>.</p>
+<div class="step">Tests de equilibrado con 20 semillas: <code>balanced</code> llega a <code>seed_round</code> en 30–60 semanas en ≥ 17/20; <code>all_train</code> (sin ingresos) quiebra en ≤ 40 semanas en ≥ 18/20;
+ninguna estrategia llega a la ronda antes de la semana 20. Ajustar solo constantes de <code>data/*.json</code> (nunca código) hasta cumplirlo, anotando cada cambio en su <code>source</code> como «ajuste de diseño».</div>
+<div class="step">Deploy a Pages y comprobar en el enlace público: carga &lt; 10 MB (pestaña Red), 60 fps en el garaje con 6 GPUs en un portátil medio (o ≥ 50 fps en el runner de Playwright como referencia).</div>
+<div class="step">Commit «M1: balance pass and public playable build»; mover en AIMS la tarea del M1 a Hecho con el hash.</div>
+</div>
+
+<h2>Autorrevisión</h2>
+<ul>
+  <li><b>Cobertura del spec (GDD §17 M1):</b> apertura → T14; garaje 3D torre + 1080 Ti → T11; simulación semana + horas, caja, factura, 2.ª tarjeta, temperatura y plomos → T3, T4, T6;
+      replicar el paper con progreso, fallos y checkpoints → T5; cerebro mínimo → T12; servir traducción y Pulso básico → T7, T8, T13; consultoría, producto y subvención → T6; fin por ronda o quiebra → T6, T8, T14;
+      aprender jugando → T13; guardado → T10; Pages → T1, T15.</li>
+  <li><b>Fuera de M1 a propósito:</b> personal, rivales, bolsa, eventos del director, colocation; alquilar GPUs sí entra por ser fuente de ingreso de la era.</li>
+  <li><b>Tipos:</b> <code>GameState</code>, <code>Command</code>, <code>GameData</code>, <code>Rng</code> definidos en T2–T3 y usados igual en T4–T15.</li>
+</ul>
+</main>
+<script>mermaid.initialize({ startOnLoad: true, theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default' });</script>
+</body>
+</html>
