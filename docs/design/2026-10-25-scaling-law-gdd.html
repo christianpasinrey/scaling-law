@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaling Law — Documento de diseño</title>
+<script src="assets/mermaid.min.js"></script>
+<script src="assets/chart.umd.js"></script>
+<style>
+  :root { --bg:#ffffff; --fg:#1b1f24; --muted:#5b6672; --line:#e3e7ec; --card:#f6f8fa; --accent:#0a8f72; --accent2:#3d5afe; --warn:#b26a00; --code:#f1f3f5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9aa7b4; --line:#252c35; --card:#151b23; --accent:#3fd6b0; --accent2:#8aa8ff; --warn:#ffb547; --code:#1a212b; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 22px 80px; }
+  nav.toc { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 22px; font-size: 13px; overflow-x: auto; white-space: nowrap; }
+  nav.toc a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+  nav.toc a:hover { color: var(--accent); }
+  h1 { font-size: 34px; margin: 8px 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 24px; margin: 48px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 26px 0 8px; }
+  p, li { color: var(--fg); }
+  .lead { font-size: 18px; color: var(--muted); }
+  .meta { color: var(--muted); font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  pre.code { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.45; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em; padding: 2px 8px; border-radius: 99px; margin-right: 6px; }
+  .user { background: #0a8f7222; color: var(--accent); }
+  .call { background: #3d5afe22; color: var(--accent2); }
+  .open { background: #b26a0022; color: var(--warn); }
+  .mermaid { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 14px 0; text-align: center; }
+  .chartbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 14px 0; height: 340px; }
+  blockquote { margin: 14px 0; padding: 8px 16px; border-left: 4px solid var(--accent); background: var(--card); color: var(--fg); }
+  .src { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<nav class="toc">
+  <a href="#vision">Visión</a><a href="#pilares">Pilares</a><a href="#lentes">Tres lentes</a><a href="#bucle">Bucle</a>
+  <a href="#apertura">Apertura</a><a href="#linea">Línea temporal</a><a href="#hardware">Hardware</a><a href="#datacenter">Datacenter</a>
+  <a href="#modelo">Modelos</a><a href="#economia">Economía</a><a href="#personal">Personal</a><a href="#eventos">Eventos</a><a href="#software">Software</a>
+  <a href="#aprender">Aprender</a><a href="#final">Final</a><a href="#ui">Interfaz</a><a href="#tecnica">Técnica</a>
+  <a href="#alcance">Alcance</a><a href="#decisiones">Decisiones</a>
+</nav>
+<main>
+
+<p class="meta">Scaling Law · Documento de diseño del juego (GDD) · v1 · 25 de octubre de 2026 · issue SL-5</p>
+<h1>Scaling Law</h1>
+<p class="lead">Un juego de gestión gratuito, open source y de navegador en el que diriges un laboratorio de IA desde el día que se publica
+<em>“Attention Is All You Need”</em> (12 de junio de 2017) hasta finales de 2025: del garaje con una GTX 1080 Ti a un campus de racks
+GB200 NVL72 refrigerados por líquido.</p>
+
+<div class="card">
+  <b>Cómo leer este documento.</b> Las decisiones se marcan según su origen:
+  <span class="tag user">USUARIO</span> lo decidió el autor del proyecto en la sesión de diseño;
+  <span class="tag call">PROPUESTA</span> es una decisión de diseño razonada, cambiable sin consultar;
+  <span class="tag open">ABIERTO</span> queda pendiente de decidir o de probar jugando.
+  Las cifras del mundo real llevan su fuente; las marcadas «aprox.» se verifican antes de fijarlas en datos del juego.
+</div>
+
+<!-- ================================================================== -->
+<h2 id="vision">1. Visión</h2>
+<p><b>La fantasía:</b> eres quien dirige un laboratorio como los que existen hoy, pero empiezas en 2017, cuando nadie sabía lo que venía. Ves con tus
+propios ojos cómo el cómputo, la electricidad y el dinero se convierten en modelos cada vez mejores, y cómo esos modelos hablan con millones de personas.</p>
+<p><b>El porqué</b> <span class="tag user">USUARIO</span>: que sea divertido y que, jugando, <b>se aprenda de verdad cómo funciona ese mundo</b>: por qué la memoria HBM importa
+más que los TFLOPS para servir un modelo, por qué un transformador eléctrico tarda años en llegar, por qué las mismas GPUs no pueden entrenar y servir a la vez.
+Un dato falso que el jugador se lleve aprendido es un fallo del juego.</p>
+
+<div class="grid3">
+  <div class="card"><b>Diferencia frente a otros tycoons de IA</b><br>Hay varios comerciales en 2026 (LLM Tycoon, Model Co., AI Lab Tycoon). Scaling Law es
+    gratis, web, open source, con <b>hardware 3D real</b>, un <b>cerebro vivo</b> ligado a tus GPUs y un feed de <b>conversaciones de clientes</b>.</div>
+  <div class="card"><b>Para quién</b><br>Gente curiosa por la IA y el hardware, jugadores de gestión (Cities, Factorio, Two Point) y quien quiere entender el
+    sector sin leer informes.</div>
+  <div class="card"><b>Duración</b> <span class="tag call">PROPUESTA</span><br>Partida completa 2017→2025 en <b>4–6 horas</b>, con guardado continuo. Sesiones de 20–45 min
+    marcadas por lanzamientos de modelos.</div>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="pilares">2. Pilares</h2>
+<ol>
+  <li><b>Real primero.</b> Hardware, fechas, consumos, precios y fallos salen del mundo real. Las marcas reales se muestran tal cual <span class="tag user">USUARIO</span>.
+     El laboratorio del jugador y sus rivales son ficticios <span class="tag call">PROPUESTA</span>, para no suplantar a empresas reales.</li>
+  <li><b>Lo importante se ve, no se lee.</b> Un problema debe diagnosticarse en menos de 3 segundos mirando el datacenter, el cerebro o el feed, sin abrir paneles.</li>
+  <li><b>Una simulación, tres lentes.</b> Datacenter (físico), cerebro (cómputo), feed (humano): tres vistas del mismo estado.</li>
+  <li><b>La energía fluye a la vista.</b> Electricidad y refrigerante recorren cables, busways y tuberías desde la red hasta cada GPU <span class="tag user">USUARIO</span>.</li>
+  <li><b>Crecer cambia el espacio y los verbos</b>, no solo multiplica números: garaje → colocation → sala → campus.</li>
+  <li><b>Escalar = alejar la cámara y delegar.</b> Las tareas pequeñas pasan a tu equipo antes de volverse rutina.</li>
+  <li><b>Presión de una frontera que avanza</b>, no castigos: los rivales mejoran y tu modelo pierde valor con el tiempo.</li>
+  <li><b>Futurista pero legible.</b> Interfaz con capa holográfica de ambientación y capa plana con los datos de verdad.</li>
+</ol>
+
+<!-- ================================================================== -->
+<h2 id="lentes">3. Las tres lentes</h2>
+<pre class="mermaid">
+flowchart TB
+  SIM[(Simulación<br/>estado único, tick semanal)]
+  SIM --> DC[Datacenter 3D<br/>racks, GPUs, cables, gente]
+  SIM --> BR[Cerebro<br/>nodos = GPUs, pulsos = tokens]
+  SIM --> FD[Feed «Pulso»<br/>conversaciones de clientes]
+  DC -->|clic en rack| ACT[Acción del jugador]
+  BR -->|clic en nodo| ACT
+  FD -->|clic en mensaje| ACT
+  ACT --> SIM
+</pre>
+
+<div class="grid3">
+  <div class="card"><b>Datacenter</b> <span class="tag user">USUARIO</span><br>Escenario base: el espacio físico con racks, máquinas, cables, empleados
+    contratados caminando y trabajando. Al crecer, la cámara se aleja: GPU → servidor → rack → fila → sala → campus.</div>
+  <div class="card"><b>Cerebro</b> <span class="tag user">USUARIO</span><br>Visualización viva del modelo que sirves: <b>cada nodo es una GPU real</b> (o un grupo a gran escala),
+    los pulsos son inferencias. Escalable: en miniatura deja ver el datacenter; ampliado se superpone y el datacenter queda de fondo.</div>
+  <div class="card"><b>Pulso (feed)</b> <span class="tag user">USUARIO</span><br>Como el pajarito de Cities: Skylines, pero con conversaciones de clientes
+    (código, vida, trabajo, estudios) que reflejan cómo va tu servicio. Nombre propio para no parecer clon de «Chirp».</div>
+</div>
+
+<h3>Semántica del cerebro <span class="tag call">PROPUESTA</span></h3>
+<table>
+  <tr><th>Propiedad visual</th><th>Variable de la simulación</th></tr>
+  <tr><td>Tamaño del nodo</td><td>Cómputo de esa GPU (TFLOPS útiles y memoria)</td></tr>
+  <tr><td>Color</td><td>Salud y temperatura: frío/azul → normal/verde → caliente/ámbar → fallo/rojo</td></tr>
+  <tr><td>Frecuencia de pulsos</td><td>Tokens por segundo servidos</td></tr>
+  <tr><td>Nodo apagado</td><td>GPU ociosa: dinero quemándose</td></tr>
+  <tr><td>Zona violeta</td><td>GPUs asignadas a entrenamiento (no sirven clientes)</td></tr>
+  <tr><td>Grosor de aristas</td><td>Ancho de banda de interconexión (NVLink dentro del nodo, InfiniBand entre nodos)</td></tr>
+  <tr><td>Aristas saturadas</td><td>Colas y cuellos de botella de red</td></tr>
+</table>
+<p><span class="tag call">PROPUESTA</span> <b>Qué es exactamente el cerebro:</b> el <b>modelo que estás ejecutando, mapeado sobre tu hardware</b>. Su forma es la arquitectura
+del modelo (capas y bloques, empezando por la Figura 1 del paper en la apertura) y cada parte se colorea según la GPU que la ejecuta. Con 1 GPU todo el modelo es de
+un color; con 8, el modelo se reparte (paralelismo de tensores y de pipeline) y se ve qué capas viven en qué tarjeta y cómo viajan los datos entre ellas por NVLink
+o InfiniBand. A gran escala hay zoom semántico: de capas a GPUs, a racks y a pods. Así el cerebro enseña cómo se distribuye un modelo en un clúster, y una GPU
+caída se ve como un trozo del modelo que se apaga.</p>
+
+<h3>Feed «Pulso» <span class="tag call">PROPUESTA</span></h3>
+<ul>
+  <li>Cada mensaje nace de una variable: dificultad de la tarea frente a la calidad del modelo, latencia, caídas, política de seguridad, precio.
+      Ejemplos: «Me ha arreglado el bug en dos minutos» (calidad alta), «Lleva 40 segundos pensando…» (latencia), «Se ha inventado una cita» (calidad baja en tareas de hechos).</li>
+  <li>Agrupa repetidos («+120 personas dicen algo parecido»), limita el ritmo y nunca se abre solo. Clic en un mensaje → te lleva a la causa (la fila que se calienta, el precio, el modelo).</li>
+  <li>Textos de plantillas locales con variaciones (sin depender de una API de IA en tiempo de juego). <span class="tag open">ABIERTO</span> modo opcional con modelo real si el jugador aporta su clave.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="bucle">4. Bucle de juego</h2>
+<pre class="mermaid">
+flowchart LR
+  subgraph M[Momento a momento · 5–60 s]
+    A1[Ver cerebro, sala y Pulso] --> A2[Detectar foco: nodo rojo, cola, queja]
+    A2 --> A3[Clic y actuar: reasignar, reparar, comprar, contratar]
+    A3 --> A4[El pulso se normaliza, el feed mejora]
+    A4 --> A1
+  end
+  subgraph S[Sesión · 20–45 min]
+    B1[Objetivo: subvención, inversor o siguiente modelo] --> B2[Ampliar capacidad: GPUs, racks, MW, gente]
+    B2 --> B3[Entrenar: compite con servir por las mismas GPUs]
+    B3 --> B4[Día de lanzamiento: benchmarks, Pulso, bolsa]
+    B4 --> B1
+  end
+  subgraph L[Largo plazo · horas]
+    C1[Garaje] --> C2[Colocation] --> C3[Sala propia] --> C4[Campus]
+  end
+  M --> S --> L
+</pre>
+<p>Tiempo <span class="tag call">PROPUESTA</span>: la <b>economía</b> (ingresos, gastos, rondas, mercado) se liquida cada <b>semana</b>; la <b>operación</b>
+(entrenamientos, averías, temperaturas, colas) avanza en <b>pasos de 1 hora</b> dentro de la semana (168 pasos/semana, baratos de calcular). Velocidades pausa / ×1 / ×2 / ×4;
+2017-06 → 2025-12 son ~445 semanas; a ×1 una semana dura ~40 s (~5 h de partida). Las incidencias críticas ralentizan el reloj a escala de horas (modo alerta)
+hasta que se resuelven. Así replicar el paper en ~4 días o un apagón de 2 horas tienen sentido dentro del mismo motor.</p>
+
+<h3>La tensión central: entrenar o servir</h3>
+<blockquote>Cada GPU-hora va al siguiente modelo (futuro) o a los clientes (dinero hoy). Si dejas sin GPUs al servicio, colas, latencia y quejas en el Pulso;
+si dejas sin GPUs al entrenamiento, la frontera te adelanta y tu modelo pierde valor.</blockquote>
+<p>Las otras decisiones que sostienen el juego <span class="tag call">PROPUESTA</span>: modelo grande o eficiente · alquilar o comprar · de quién es el dinero
+(capital riesgo, nube estratégica, deuda, subvenciones, bolsa) · precio · velocidad frente a seguridad y legalidad · guerra por el talento.</p>
+
+<!-- ================================================================== -->
+<h2 id="apertura">5. La apertura</h2>
+<p><span class="tag user">USUARIO</span> El juego empieza el <b>12 de junio de 2017, 17:57 UTC</b>, cuando arXiv publica <em>Attention Is All You Need</em> (1706.03762).
+Prototipo hecho: <code>prototypes/01-intro-transformer/index.html</code>.</p>
+<ol>
+  <li>Aviso de arXiv → portada del paper (autores, afiliaciones, resumen propio, datos clave: 28,4 / 41,0 BLEU, modelo base en 8 × P100 en 12 h).</li>
+  <li>La Figura 1 se dibuja bloque a bloque con tokens fluyendo; cada bloque se explica al pulsarlo.</li>
+  <li>Paso al garaje: «Google Brain: 8 × P100, ~12 h. Tú: 1 × GTX 1080 Ti, ~4 días». <b>Primer objetivo: replicar el paper.</b></li>
+</ol>
+<p>Arranque <span class="tag call">PROPUESTA</span>: 2 fundadores (el jugador elige su perfil: investigador, ingeniero o negocio), 10.000 $ de ahorros, el PC de la torre
+de 2017 con una GTX 1080 Ti y la factura eléctrica de casa. El tutorial es el propio objetivo de replicar el paper: comprar una segunda tarjeta, ver el
+entrenamiento en el cerebro, publicar el resultado y conseguir los primeros usuarios.</p>
+
+<!-- ================================================================== -->
+<h2 id="linea">6. Línea temporal 2017–2025</h2>
+<p><span class="tag user">USUARIO</span> El hardware aparece en la tienda el año en que salió de verdad. <b>El mundo reacciona al jugador</b>: el mercado, los rivales
+y los eventos se simulan. La historia real es la <b>ruta por defecto</b> (lo que pasa si nadie la altera), pero se desvía según lo que hagas: el «momento del chatbot»
+de finales de 2022 lo puede provocar antes el propio jugador si lanza un producto de chat, y entonces el mercado se dispara antes, los rivales aceleran y la
+escasez de GPUs llega antes.</p>
+<p><span class="tag call">PROPUESTA</span> Cómo se implementa: cada hito del mundo es un evento con <b>fecha por defecto</b> y <b>condiciones de disparo</b>
+(p. ej. «momento del chatbot: por defecto nov-2022; se adelanta si algún laboratorio —tú o un rival— lanza un chat con Q ≥ umbral»). Las fechas del hardware y los
+hechos externos al sector (pandemia, boom y caída cripto) son fijos; lo que dependa de los laboratorios y del mercado de IA se desplaza. Al final, la pantalla de cierre
+compara tu historia con la real («en la realidad, esto pasó en…»), que es parte del aprendizaje.</p>
+<pre class="mermaid">
+timeline
+  title Hardware real y mundo
+  2017 : Paper Transformer (inicio) : GTX 1080 Ti · Titan V · Tesla V100 · DGX-1 : Boom cripto, GPUs agotadas
+  2018 : RTX 2080 Ti : Modelos preentrenados de lenguaje
+  2019 : Rondas grandes de capital : Modelos de texto que asustan
+  2020 : A100 · DGX A100 · RTX 3090 : Escasez de chips (pandemia) : Escalar se demuestra rentable
+  2021 : Escasez de GPUs (cripto) : Modelos de código e imagen
+  2022 : H100 · RTX 4090 : Caída cripto, GPUs baratas : Momento del chatbot (fin de año)
+  2023 : L40S : Fiebre de H100, colas de meses : Regulación en marcha
+  2024 : H200 · B200 · tu 4070 Ti SUPER : Límite eléctrico, se buscan MW : Rondas de miles de millones
+  2025 : RTX 5090 · RTX PRO 6000 · GB200 NVL72 : Shock de modelos abiertos baratos : Fin de la partida
+</pre>
+<p class="src">Fechas de hardware: phase-1 assets y sus fuentes. Eventos de mundo: research 03/04 (resumidos, se convierten en eventos con efectos, no en guion cerrado).</p>
+
+<!-- ================================================================== -->
+<h2 id="hardware">7. Hardware</h2>
+<p>Todo lo de la tabla está modelado en 3D a partir de fotos y fichas (ver <code>README.md</code>). Precios de salida aproximados: se verifican antes de cargarlos como datos.</p>
+<table>
+  <tr><th>Año</th><th>Pieza</th><th>Memoria</th><th>Rendimiento IA útil (aprox.)</th><th>Consumo</th><th>Precio (aprox.)</th><th>Papel en el juego</th></tr>
+  <tr><td>2017</td><td>GTX 1080 Ti FE</td><td>11 GB GDDR5X</td><td>~11 TFLOPS FP32</td><td>250 W</td><td>699 $</td><td>Garaje, punto de partida</td></tr>
+  <tr><td>2017</td><td>Titan V</td><td>12 GB HBM2</td><td>~110 TFLOPS tensor</td><td>250 W</td><td>2.999 $</td><td>Primera tarjeta «de IA» al alcance</td></tr>
+  <tr><td>2017</td><td>Tesla V100 PCIe / SXM2</td><td>16–32 GB HBM2</td><td>~112–125 TFLOPS tensor</td><td>250–300 W</td><td>~9.000 $</td><td>Primer servidor; DGX-1 (8×SXM2)</td></tr>
+  <tr><td>2018</td><td>RTX 2080 Ti FE</td><td>11 GB</td><td>~108 TFLOPS tensor FP16</td><td>260 W</td><td>1.199 $</td><td>Consumo con Tensor Cores</td></tr>
+  <tr><td>2020</td><td>RTX 3090 FE</td><td>24 GB</td><td>~71 TFLOPS tensor FP16 (denso)</td><td>350 W</td><td>1.499 $</td><td>Memoria grande barata</td></tr>
+  <tr><td>2020</td><td>A100 PCIe / SXM4</td><td>40–80 GB HBM2e</td><td>312 TFLOPS BF16</td><td>250–400 W</td><td>~10–15k $</td><td>La era de los modelos grandes; DGX A100</td></tr>
+  <tr><td>2022</td><td>H100 PCIe / SXM5</td><td>80 GB HBM3</td><td>~990 TFLOPS BF16 (SXM)</td><td>350–700 W</td><td>~25–30k $</td><td>La fiebre de 2023; DGX H100</td></tr>
+  <tr><td>2022</td><td>RTX 4090 FE</td><td>24 GB</td><td>~165 TFLOPS FP16 (denso)</td><td>450 W</td><td>1.599 $</td><td>Tope de consumo</td></tr>
+  <tr><td>2023</td><td>L40S</td><td>48 GB GDDR6</td><td>~360 TFLOPS FP16</td><td>350 W</td><td>~8–10k $</td><td>Inferencia más barata</td></tr>
+  <tr><td>2024</td><td>MSI RTX 4070 Ti SUPER Ventus 3X</td><td>16 GB</td><td>~90 TFLOPS FP16</td><td>285 W</td><td>~800 $</td><td>La tarjeta del autor 😉</td></tr>
+  <tr><td>2024</td><td>H200 SXM</td><td>141 GB HBM3e</td><td>como H100, más ancho de banda</td><td>700 W</td><td>~30–40k $</td><td>Servir modelos grandes</td></tr>
+  <tr><td>2024</td><td>B200 / DGX B200</td><td>192 GB HBM3e</td><td>~2.250 TFLOPS BF16</td><td>1.000 W</td><td>~35–40k $</td><td>Blackwell, aire</td></tr>
+  <tr><td>2025</td><td>RTX 5090 · RTX PRO 6000</td><td>32 · 96 GB GDDR7</td><td>~210 · ~250 TFLOPS FP16</td><td>575 · 600 W</td><td>1.999 · ~8,5k $</td><td>Consumo y estación de trabajo</td></tr>
+  <tr><td>2025</td><td>GB200 NVL72</td><td>72 × 192 GB</td><td>~180 PFLOPS BF16 por rack</td><td>~120–132 kW/rack</td><td>~3 M $/rack</td><td>Final: refrigeración líquida obligatoria</td></tr>
+</table>
+<div class="chartbox"><canvas id="chPerf"></canvas></div>
+<p class="src">Gráfica: rendimiento IA útil por GPU (aprox., escala logarítmica). Muestra la ley que da nombre al juego: cada generación multiplica.</p>
+
+<h3>Lo que el juego enseña con el hardware</h3>
+<ul>
+  <li><b>Entrenar pide cómputo; servir pide memoria y ancho de banda.</b> Una tarjeta de consumo tiene muchos TFLOPS pero poca memoria: vale para modelos pequeños.</li>
+  <li><b>Depreciación brutal:</b> una V100 de ~9.000 $ en 2017 se vende usada por ~250 € hoy. Mercado de segunda mano para recuperar parte del capital.</li>
+  <li><b>Cada generación obliga a rehacer instalaciones:</b> densidad por rack de ~10 kW a ~130 kW; el aire deja de bastar.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="datacenter">8. Datacenter y energía</h2>
+<h3>Escalones del espacio <span class="tag call">PROPUESTA</span></h3>
+<table>
+  <tr><th>Escalón</th><th>Potencia IT</th><th>GPUs</th><th>Qué cambia (verbos nuevos)</th><th>Assets</th></tr>
+  <tr><td>0 · Garaje</td><td>1–15 kW</td><td>1–8</td><td>Montar tarjetas, saltan los plomos, ruido y calor en casa, factura de la luz</td><td>Torre H440, bastidor abierto</td></tr>
+  <tr><td>1 · Colocation</td><td>50 kW–1 MW</td><td>32–1.000</td><td>Alquilas kW (≈190–235 $/kW/mes), primer servidor, SLA, «manos remotas»</td><td>4U PCIe, DGX-1/A100, kit de rack</td></tr>
+  <tr><td>2 · Sala propia</td><td>2–20 MW</td><td>1k–15k</td><td>Diseñas refrigeración, contención, busways, primeras guardias 24/7</td><td>Sala: busway, bandejas, contención, CRAH, InRow</td></tr>
+  <tr><td>3 · Edificio</td><td>20–150 MW</td><td>15k–100k</td><td>Subestación, generadores, transformadores con plazos de años, líquido</td><td>Planta: transformador, cuadros, SAI, CDU, enfriadoras</td></tr>
+  <tr><td>4 · Campus</td><td>300 MW–1 GW+</td><td>100k+</td><td>Conexión a red con años de cola, contratos de energía, agua, permisos</td><td>NVL72, planta completa</td></tr>
+</table>
+<p class="src">Fuente: research 02-datacenter §1 (CBRE 2026, Llama 3 paper, Epoch AI, DCD).</p>
+
+<h3>La cadena que se ve fluir <span class="tag user">USUARIO</span></h3>
+<pre class="mermaid">
+flowchart LR
+  G[Red eléctrica] --> T[Transformador<br/>2–4 años de plazo] --> SW[Cuadro general] --> U[SAI + baterías] --> BW[Busway] --> TP[Tap-off] --> P[PDU / busbar] --> S[Servidor] --> GPU[GPU]
+  GEN[Generador diésel] -.respaldo.-> SW
+  CH[Enfriadora / dry cooler] --> CDU[CDU] --> MF[Colectores del rack] --> CP[Cold plates] --> GPU
+  GPU -.calor.-> CH
+</pre>
+<p>Cada tramo es un asset con <code>SOCKET_*</code> en sus extremos y UV de flujo: un shader anima pulsos de energía (proporcionales a los kW reales) y de refrigerante (azul impulsión, rojo retorno).
+Si un tramo falla, el flujo se corta a la vista y el cerebro se apaga por zonas.</p>
+<div class="chartbox"><canvas id="chRack"></canvas></div>
+<p class="src">Densidad típica por rack (aprox.): research 02 §2.2.</p>
+<p><b>La energía es el cuello de botella</b> del mundo real y del juego: la expansión se limita por <b>MW asegurados</b>, no por metros cuadrados. Pedir un transformador o
+entrar en la cola de conexión a red son decisiones con años de antelación.</p>
+
+<!-- ================================================================== -->
+<h2 id="modelo">9. Modelos: entrenar, lanzar, servir</h2>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Investigación
+  Investigación --> Entrenamiento: asignar GPUs y datos
+  Entrenamiento --> Entrenamiento: fallos, checkpoints, reintentos
+  Entrenamiento --> Evaluación
+  Evaluación --> Lanzamiento: benchmarks y seguridad
+  Lanzamiento --> Servicio
+  Servicio --> Servicio: demanda, precio, latencia
+  Servicio --> [*]: retirado por un modelo mejor
+</pre>
+<ul>
+  <li><b>Calidad del modelo (Q)</b> en escala logarítmica <span class="tag call">PROPUESTA</span>: <code>Q = 10 + 12 · log10(cómputo efectivo)</code> — cada ×10 de cómputo ≈ +12 puntos (leyes de escala simplificadas).</li>
+  <li><b>Cómputo efectivo</b> = GPUs × semanas × rendimiento de la generación × eficiencia algorítmica (que sube con la investigación) × calidad de datos.</li>
+  <li><b>Fallos de entrenamiento</b> como ruido de fondo: ~4,7×10⁻⁴ interrupciones por GPU y día (Llama 3: 419 en 54 días con 16k H100). El juego premia el <b>tiempo efectivo</b>
+      (checkpoints, automatización, repuestos, personal), no evitar todos los fallos.</li>
+  <li><b>Día de lanzamiento:</b> benchmarks visibles con su desglose (puntuación transparente), oleada en el Pulso, reacción de inversores o bolsa.</li>
+  <li><b>La frontera avanza</b> (~+7 Q/año, más con eventos); el precio de una calidad dada cae ~×0,25 al año: tu modelo pierde valor solo.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="economia">10. Economía</h2>
+<p>Objetivo: <b>pocas palancas fuertes, respuesta visible, sabor real</b>; nada de hoja de cálculo. Fórmulas de partida (se calibran jugando):</p>
+<pre class="code">
+demanda      = mercado(t) × cuota
+cuota        = atractivo / (atractivo + Σ atractivo_rivales)
+atractivo    = e^((Q − Q_frontera)/8) × (precioRef/precio)^1.3 × latencia × (0,5 + reputación/100) × (1 + hype/200)
+servido      = min(demanda, capacidad)          # lo no servido = colas, latencia, quejas
+capacidad    = GPUs_servicio × tokens/s × 604.800 × utilización(≤0,7)
+ingresos     = tokens × precio + suscriptores × cuota + contratos empresa
+coste        = GPU-horas × precio GPU-hora (alquiladas) | amortización + energía (propias)
+</pre>
+<table>
+  <tr><th>Fuente de cómputo</th><th>Coste relativo</th><th>Compromiso</th></tr>
+  <tr><td>Nube bajo demanda</td><td>×3</td><td>ninguno, instantáneo</td></tr>
+  <tr><td>Neocloud</td><td>×1,5</td><td>puede agotarse en escaseces</td></tr>
+  <tr><td>Reserva 1–3 años</td><td>×1–0,8</td><td>pagas aunque no uses</td></tr>
+  <tr><td>Acuerdo con nube estratégica</td><td>×0,6 en créditos</td><td>exclusividad y cedes capital</td></tr>
+  <tr><td>Propio</td><td>~×0,5</td><td>capex, meses de obra, se queda viejo</td></tr>
+  <tr><td>Subvención pública</td><td>×0</td><td>horas con condiciones y caducidad</td></tr>
+</table>
+<h3>Ingresos antes del chatbot (2017 – ~2022) <span class="tag user">USUARIO</span></h3>
+<p>El negocio de vender tokens de chat no existe hasta el «momento del chatbot». Antes, el laboratorio vive de cuatro fuentes, y <b>cada una compite por lo mismo que
+la investigación</b> (tiempo del equipo o GPUs):</p>
+<table>
+  <tr><th>Fuente</th><th>Qué es</th><th>Lo que cuesta</th></tr>
+  <tr><td><b>Productos de su época</b></td><td>API de traducción, resumen o clasificación; modelos a medida para bancos, legal o atención al cliente. Poco dinero pero recurrente.</td><td>GPUs dedicadas a servir y soporte a clientes.</td></tr>
+  <tr><td><b>Investigación y prestigio</b></td><td>Publicar papers y ganar benchmarks sube la reputación, que desbloquea subvenciones de cómputo, inversores y talento.</td><td>GPUs para experimentos; no paga facturas directamente.</td></tr>
+  <tr><td><b>Consultoría y encargos</b></td><td>Trabajos puntuales para empresas que quieren «hacer algo con IA».</td><td>Horas de investigadores que no investigan.</td></tr>
+  <tr><td><b>Alquilar GPUs ociosas</b></td><td>Vender horas a terceros (cómputo o minería) en los años de escasez (2017–18, 2020–21).</td><td>Tus GPUs no avanzan tu modelo; desgaste.</td></tr>
+</table>
+<p><span class="tag call">PROPUESTA</span> El equilibrio de partida debe permitir sobrevivir el primer año con los 10.000 $ si el jugador mezcla bien estas fuentes y consigue
+una subvención o una ronda pequeña; el «momento del chatbot» cambia el negocio a tokens y suscripciones y multiplica el mercado.</p>
+
+<h3>Dinero <span class="tag user">USUARIO</span></h3>
+<ul>
+  <li><b>Subvenciones</b>: dan sobre todo <b>horas de cómputo</b> con condiciones (convocatorias tipo EuroHPC, PERTE con MareNostrum, NAIRR). Son objetivos narrativos, no cheques.</li>
+  <li><b>Rondas</b>: semilla → A/B → mega-rondas; valoración = múltiplo × ingresos previstos (múltiplo sube con hype, crecimiento y ventaja sobre la frontera); dilución visible.</li>
+  <li><b>Deuda respaldada por GPUs</b>: sin dilución, con riesgo de <i>margin call</i> si cae el valor de las GPUs.</li>
+  <li><b>Salida a bolsa</b>: dinero enorme a cambio de presión trimestral. Precio de la acción = fundamentales × sentimiento × hype × reputación + sobresaltos
+      (lanzamiento que supera a la frontera +5–15 %, caída del servicio −1–3 %, escándalo −5–20 %, shock de modelos abiertos baratos −10–20 % en todo el sector).</li>
+  <li><b>Si suben las acciones, más fondos</b> <span class="tag user">USUARIO</span>: ampliaciones de capital más baratas y equity de empleados que retiene talento.</li>
+  <li>Fallo principal: quiebra. Es una espiral lenta y legible con salidas de emergencia (ronda puente, vender GPUs, cerrar el plan gratuito).</li>
+</ul>
+<div class="chartbox"><canvas id="chPrice"></canvas></div>
+<p class="src">Precio relativo de una misma calidad de modelo (aprox., ~×10 más barato por año en el mundo real; el juego usa ×4). Research 03 §1.1 (Epoch AI).</p>
+
+<!-- ================================================================== -->
+<h2 id="personal">11. Personal</h2>
+<p><span class="tag user">USUARIO</span> Contratas gente que aparece en el datacenter. Roles reales con ratios y salarios orientativos (research 02 §7):</p>
+<table>
+  <tr><th>Rol</th><th>Qué hace en el juego</th><th>Ratio orientativo</th></tr>
+  <tr><td>Técnico de datacenter</td><td>Monta, cablea, cambia GPUs/fuentes/ventiladores, RMA</td><td>1–2 por 1.000 GPUs</td></tr>
+  <tr><td>Ingeniero de instalaciones</td><td>SAI, generadores, enfriadoras, CDU; primera respuesta a alarmas</td><td>~0,5 por 10 MW; 24/7 ≈ 5 personas por puesto</td></tr>
+  <tr><td>Ingeniero de red</td><td>Fabric InfiniBand/Ethernet, ópticas, cuellos de botella</td><td>1 por 5–10k GPUs</td></tr>
+  <tr><td>SRE / infraestructura ML</td><td>Guardias, automatización, checkpoints, tiempo efectivo</td><td>1 por 2–5k GPUs</td></tr>
+  <tr><td>Investigador</td><td>Sube la eficiencia algorítmica y la calidad; riesgo de fuga a rivales</td><td>—</td></tr>
+  <tr><td>Seguridad y cumplimiento</td><td>Robo de pesos, auditorías, controles de exportación</td><td>—</td></tr>
+  <tr><td>Compras / energía</td><td>Asignaciones de GPUs, transformadores, contratos de energía</td><td>—</td></tr>
+</table>
+<p><b>Delegación</b> <span class="tag call">PROPUESTA</span>: al contratar un responsable (CTO, jefe de operaciones, jefe de instalaciones) sus tareas pasan a automático con su nivel de acierto;
+tú decides lo estratégico. Personajes estilizados y sencillos (no se han modelado aún).</p>
+
+<!-- ================================================================== -->
+<h2 id="eventos">12. Eventos</h2>
+<p>Un «director» al estilo RimWorld elige eventos según tu situación. Los eventos técnicos salen de incidentes reales (research 02 §10):</p>
+<div class="grid2">
+  <div class="card"><b>Refrigeración</b> (los más dramáticos, modo alerta roja)<br>Fallo de bomba de CDU → la fila C reduce su velocidad · Tormenta tira el BMS y las enfriadoras
+    (Nebius 2026: 58,5 °C en ~2 h) · Torre de refrigeración congelada por no seguir el procedimiento · Fuga de refrigerante en un rack.</div>
+  <div class="card"><b>Energía</b><br>Transformador con 2–4 años de plazo · Cola de conexión a red · Generador que no arranca · Turbinas de gas sin permiso (demanda judicial) ·
+    La compañía eléctrica exige limitar picos de carga.</div>
+  <div class="card"><b>Hardware y red</b><br>Lote de ópticas defectuoso · Tormenta de errores HBM en GPUs nuevas · Corrupción silenciosa de datos (retroceso a checkpoint) ·
+    Nodo lento que frena todo el entrenamiento · Falta de repuestos.</div>
+  <div class="card"><b>Mundo y empresa</b><br>Escasez de GPUs · Shock de modelos abiertos baratos · Regulación y multas · Demandas por datos de entrenamiento ·
+    Guerra de fichajes · Invierno de financiación · Robo de pesos del modelo.</div>
+</div>
+<p><b>Libro de políticas</b> <span class="tag call">PROPUESTA</span>: pocas decisiones irreversibles con matices morales, sin juzgar (estilo Frostpunk): datos de entrenamiento,
+pruebas de seguridad antes de lanzar, modelos abiertos o cerrados, clientes militares, transparencia. Mueven la confianza pública frente a la presión inversora
+y definen el final.</p>
+
+<!-- ================================================================== -->
+<h2 id="software">12 bis. El software: cómo funciona el modelo</h2>
+<p><span class="tag user">USUARIO</span> El juego enseña <b>tanto el hardware como el software</b>: el modelo que vas usando en cada época, cómo funciona por dentro,
+cómo responde (inferencia) y cómo aprende (entrenamiento), con representaciones visuales de nodos, capas y flujos. <b>Se diseña para alguien que parte de cero</b>:
+el propio autor no sabe cómo funciona por dentro, y el objetivo es que al terminar la partida lo entienda.</p>
+
+<h3>El cerebro tiene dos modos <span class="tag call">PROPUESTA</span></h3>
+<div class="grid2">
+  <div class="card"><b>Modo inferencia</b> (cuando sirves clientes)<br>
+    Una conversación real del Pulso entra por abajo: se trocea en <b>tokens</b>, cada token se convierte en un vector (<b>embedding</b>), sube por las capas, la
+    <b>atención</b> dibuja líneas entre palabras, y arriba sale la siguiente palabra elegida entre las más probables. Se ve el <b>KV-cache</b> llenándose (por qué las
+    conversaciones largas gastan memoria) y el <b>batching</b>: muchas conversaciones a la vez compartiendo la GPU (por qué servir sale barato… hasta que se llena la memoria).</div>
+  <div class="card"><b>Modo entrenamiento</b> (cuando entrenas)<br>
+    Una ola sube por las capas (<b>forward</b>), se calcula el <b>error</b> (loss) comparando con el texto real, y una ola de vuelta baja (<b>backpropagation</b>) ajustando
+    los pesos. Con varias GPUs se ve el <b>all-reduce</b>: las GPUs intercambian sus gradientes por NVLink/InfiniBand (por qué la red importa tanto). La <b>curva de
+    loss</b> baja en directo; un fallo de GPU corta la ola y obliga a volver al último <b>checkpoint</b>.</div>
+</div>
+<pre class="mermaid">
+flowchart TB
+  subgraph INF[Inferencia: responder]
+    direction LR
+    I1[Texto del cliente] --> I2[Tokens] --> I3[Embeddings] --> I4[Capas: atención + feed forward] --> I5[Probabilidades] --> I6[Siguiente token]
+    I6 -->|se repite token a token| I4
+  end
+  subgraph TRN[Entrenamiento: aprender]
+    direction LR
+    T1[Lote de textos] --> T2[Forward] --> T3[Loss: cuánto se equivoca] --> T4[Backpropagation] --> T5[Gradientes] --> T6[All-reduce entre GPUs] --> T7[Optimizador ajusta pesos]
+    T7 --> T2
+  end
+</pre>
+
+<h3>El árbol de investigación sigue la historia real del software <span class="tag call">PROPUESTA</span></h3>
+<p>Cada avance que investigas cambia <b>cómo es tu modelo</b>, cómo se ve en el cerebro y lo que puede hacer. Fechas por defecto del mundo real (el jugador puede
+llegar antes o después):</p>
+<table>
+  <tr><th>Época</th><th>Avance</th><th>Qué cambia en el juego</th><th>Cómo se ve en el cerebro</th></tr>
+  <tr><td>2017</td><td>Transformer codificador-decodificador</td><td>Traducción de calidad, entrena en paralelo</td><td>La Figura 1</td></tr>
+  <tr><td>2018</td><td>Preentrenar y luego ajustar (fine-tuning)</td><td>Un modelo base sirve para muchas tareas: más productos con el mismo entrenamiento</td><td>Un tronco común con «ramas» por tarea</td></tr>
+  <tr><td>2018–19</td><td>Solo decodificador que predice el siguiente token</td><td>Genera texto; abre productos de escritura y código</td><td>El codificador desaparece; columna única más alta</td></tr>
+  <tr><td>2020</td><td>Leyes de escala</td><td>Muestra al jugador la curva calidad↔cómputo: se puede predecir cuánto mejorará</td><td>La gráfica aparece en el panel de entrenamiento</td></tr>
+  <tr><td>2020–22</td><td>Paralelismo (datos, tensores, pipeline)</td><td>Entrenar modelos que no caben en una GPU</td><td>El modelo se reparte por colores entre GPUs</td></tr>
+  <tr><td>2022</td><td>Seguir instrucciones y aprender de valoraciones humanas</td><td>Habilita el producto de chat («momento del chatbot»)</td><td>Una capa de «modales» sobre el modelo base</td></tr>
+  <tr><td>2022–23</td><td>Precisión reducida (FP16 → FP8) y cuantización</td><td>Más velocidad y menos memoria a cambio de algo de calidad</td><td>Los nodos se «compactan»</td></tr>
+  <tr><td>2023–24</td><td>Mezcla de expertos (MoE)</td><td>Más parámetros con el mismo coste por token</td><td>Solo se encienden algunos expertos por token</td></tr>
+  <tr><td>2023–24</td><td>Contexto largo y recuperación de documentos</td><td>Conversaciones y documentos largos, más memoria (KV-cache)</td><td>La memoria de contexto crece a la vista</td></tr>
+  <tr><td>2024–25</td><td>Modelos que razonan antes de responder</td><td>Mejor en tareas difíciles; cada respuesta cuesta más cómputo</td><td>Bucles de «pensamiento» antes de soltar la respuesta</td></tr>
+  <tr><td>2025</td><td>Agentes que usan herramientas</td><td>Productos que ejecutan tareas, no solo responden</td><td>Salidas que vuelven a entrar como acciones</td></tr>
+</table>
+<p class="src">Cronología a verificar y documentar con fuentes al pasarla a datos (papers originales). Los nombres de modelos reales aparecen solo en el modo «saber más»;
+los modelos del jugador y de los rivales son ficticios.</p>
+
+<h3>Principios didácticos <span class="tag call">PROPUESTA</span></h3>
+<ul>
+  <li><b>Primero se ve, luego se nombra.</b> El jugador observa el fenómeno (la ola que baja, las líneas de atención) y después la ficha le pone nombre y fórmula.</li>
+  <li><b>Tres niveles en cada ficha</b>: una frase para cualquiera, un párrafo con el porqué, y la fórmula o el paper para quien quiera más.</li>
+  <li><b>Cada concepto aparece cuando el jugador lo necesita</b> (el KV-cache cuando las conversaciones largas llenan la memoria, el all-reduce al comprar la segunda GPU).</li>
+  <li><b>Pruebas de comprensión</b>: preguntas opcionales tras los hitos («¿por qué tu modelo responde más lento con más usuarios?») que dan una pequeña ventaja.</li>
+  <li>Revisión: las fichas didácticas se validan contra papers y documentación oficial antes de publicarse.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="aprender">13. Aprender jugando</h2>
+<ul>
+  <li><b>Modo «saber más»</b> <span class="tag user">USUARIO</span>: cada pieza, evento y concepto tiene su ficha con la explicación real y fuentes, sin interrumpir la partida
+    (semilla ya en la apertura: cada bloque del Transformer se explica al pulsarlo).</li>
+  <li><b>Museo de hardware</b> <span class="tag call">PROPUESTA</span>: vitrina 3D con cada pieza que has tenido, girable, con su ficha; el disipador de los módulos SXM se puede quitar para ver el chip y la HBM.</li>
+  <li><b>Comparador</b>: tu hardware frente al de la época (la tarjeta de la apertura: «Google Brain 8×P100 en 12 h, tú 1×1080 Ti en ~4 días»).</li>
+  <li><b>Regla de oro</b>: ninguna simplificación enseña algo falso; si se simplifica, la ficha lo dice.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="final">14. Final de la partida</h2>
+<p><span class="tag user">USUARIO</span> La historia termina en <b>diciembre de 2025</b> con un resumen y logros.</p>
+<ul>
+  <li><b>Pantalla de cierre</b>: valoración, cuota de mercado, generaciones de modelos, hardware máximo, MW, personas y el cerebro final como «trofeo» de la partida.</li>
+  <li><b>Arquetipo</b> según tus decisiones y el libro de políticas: la más segura, la más rápida, la más rentable, la más abierta, la que vendió su alma…</li>
+  <li><b>Logros</b> ligados a momentos reales: «Replicar el paper», «Primera A100», «Sobrevivir al shock de modelos abiertos», «Del aire al líquido», «Salir a bolsa»,
+      «Tu propia 4070 Ti SUPER en el rack».</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="ui">15. Interfaz</h2>
+<ul>
+  <li><b>Dos capas</b>: ambientación holográfica en el mundo 3D + paneles planos con los datos de verdad, buen contraste.</li>
+  <li><b>HUD</b>: fecha y velocidad, caja, ingresos/gastos semanales, MW usados/disponibles, calidad del modelo frente a la frontera, hype/reputación, Pulso plegable,
+    cerebro en miniatura (pantalla en pantalla) ampliable.</li>
+  <li><b>Escalas logarítmicas</b> en cómputo, dinero y calidad (×10 se lee mejor que +X).</li>
+  <li>El movimiento solo indica cambios reales. Hay un modo con movimiento reducido.</li>
+  <li>Idioma inicial español, preparado para traducir (inglés el segundo) <span class="tag call">PROPUESTA</span>.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="tecnica">16. Arquitectura técnica</h2>
+<pre class="mermaid">
+flowchart LR
+  subgraph Worker[Web Worker]
+    SIM[Simulación determinista<br/>tick semanal, semilla]
+    DATA[(Datos JSON<br/>hardware, eventos, precios por año)]
+    DATA --> SIM
+  end
+  subgraph Main[Hilo principal]
+    UI[UI · paneles planos]
+    R3[Three.js · datacenter]
+    BR[Cerebro · InstancedMesh + shaders]
+    FD[Pulso · plantillas]
+  end
+  SIM -- estado --> UI & R3 & BR & FD
+  UI -- acciones --> SIM
+  GLB[(GLB · Meshopt/KTX2<br/>SLOT_ SOCKET_ LED_ flow UV)] --> R3
+  SAVE[(IndexedDB · guardado)] <--> SIM
+</pre>
+<ul>
+  <li><b>Stack</b> <span class="tag user">USUARIO</span>: web pura, Three.js + TypeScript + Vite; publicación en GitHub Pages y espejo en el VPS. Sin Electron.</li>
+  <li><b>Simulación en un Web Worker</b>, determinista con semilla (repeticiones, pruebas reproducibles con Vitest, como en RollDaBall).</li>
+  <li><b>Datos en JSON</b> versionados (hardware por año, eventos, precios), cada dato con su fuente, para que la comunidad corrija cifras sin tocar código.</li>
+  <li><b>Render</b>: instancias para GPUs/racks, LODs bakeados (issue SL-4), shaders de flujo leyendo <code>flow_u_start/end</code>, cerebro en ≤3 draw calls.
+    Objetivo: 60 fps en un portátil medio, carga inicial &lt;10 MB con streaming por escalones.</li>
+  <li><b>Guardado</b> local (IndexedDB) y exportable a fichero.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="alcance">17. Alcance</h2>
+<div class="grid3">
+  <div class="card"><b>Objetivos</b><ul>
+    <li>Partida 2017–2025 completa y equilibrada.</li><li>Tres lentes funcionando sobre una simulación.</li>
+    <li>Todo el hardware y la infraestructura ya modelados, usados en el juego.</li><li>Aprender jugando con fichas y fuentes.</li></ul></div>
+  <div class="card"><b>Fuera de alcance (v1)</b><ul>
+    <li>Multijugador.</li><li>Jugar como una empresa real (OpenAI, Anthropic…).</li><li>Diseño específico para móvil (que funcione, sí).</li>
+    <li>Después de 2025 (salvo un posible epílogo).</li><li>Contenido generado por IA en tiempo real como requisito.</li></ul></div>
+  <div class="card"><b>Anti-objetivos</b><ul>
+    <li>Enseñar algo falso.</li><li>Convertirse en una hoja de cálculo.</li><li>Espectáculo que no informa.</li>
+    <li>Parecer un clon de LLM Tycoon / Model Co.</li></ul></div>
+</div>
+
+<h3>Cómo se construye <span class="tag call">PROPUESTA</span></h3>
+<ul>
+  <li><b>Equipo</b>: el autor y Claude con agentes; sin fecha comprometida. Cada hito se publica en GitHub Pages y se prueba jugando antes de seguir.</li>
+  <li><b>Fuentes</b>: los informes de investigación están en <code>docs/research/</code> (01 hardware, 02 datacenter, 03 economía, 04 referentes). Cada dato que pase
+    a los JSON del juego lleva su fuente; las cifras «aprox./unverified» se verifican al cargarlas.</li>
+  <li><b>Arte</b>: los assets héroe existen; mientras llegan los LOD (SL-4) se aceptan versiones provisionales. Falta modelar: la habitación del garaje y los empleados.</li>
+</ul>
+<h3>Hito M1 · Garaje jugable (alcance) <span class="tag call">PROPUESTA</span></h3>
+<ul>
+  <li>Apertura del paper → garaje en 3D con la torre de 2017 y una GTX 1080 Ti.</li>
+  <li>Simulación mínima (semana + horas): caja, factura eléctrica, comprar una 2.ª tarjeta, temperaturas y plomos.</li>
+  <li>Entrenar «replicar el paper» con barra de progreso, fallos y checkpoints.</li>
+  <li><b>Cerebro mínimo</b> (el modelo sobre 1–2 GPUs) y <b>servir</b> el primer producto de traducción a unos pocos clientes, con Pulso básico.</li>
+  <li>Dos fuentes de ingreso de la era (producto y consultoría) y una subvención de cómputo.</li>
+  <li>Termina cuando el jugador cierra su primera ronda o se queda sin dinero.</li>
+</ul>
+<h3>Hitos propuestos <span class="tag call">PROPUESTA</span></h3>
+<pre class="mermaid">
+flowchart LR
+  M0[M0 · Assets 3D<br/>hecho] --> M1[M1 · Garaje jugable<br/>replicar el paper, cerebro y Pulso mínimos]
+  M1 --> M2[M2 · Tres lentes completas<br/>cerebro distribuido, Pulso, zoom]
+  M2 --> M3[M3 · Colocation y servidores<br/>economía, rondas]
+  M3 --> M4[M4 · Sala y energía<br/>flujo visible, eventos]
+  M4 --> M5[M5 · Campus, bolsa, final<br/>logros, museo]
+</pre>
+
+<!-- ================================================================== -->
+<h2 id="decisiones">18. Decisiones y pendientes</h2>
+<table>
+  <tr><th>Tema</th><th>Estado</th><th>Detalle</th></tr>
+  <tr><td>Plataforma</td><td><span class="tag user">USUARIO</span></td><td>Web, Three.js, GitHub Pages + VPS, open source.</td></tr>
+  <tr><td>Inicio</td><td><span class="tag user">USUARIO</span></td><td>12-06-2017, publicación del paper Transformer.</td></tr>
+  <tr><td>Fin</td><td><span class="tag user">USUARIO</span></td><td>Diciembre de 2025, resumen + logros.</td></tr>
+  <tr><td>Marcas reales</td><td><span class="tag user">USUARIO</span></td><td>Hardware con nombres y logos reales.</td></tr>
+  <tr><td>Ingresos 2017–2022</td><td><span class="tag user">USUARIO</span></td><td>Productos de la época, investigación y prestigio, consultoría, alquiler de GPUs.</td></tr>
+  <tr><td>Historia</td><td><span class="tag user">USUARIO</span></td><td>El mundo reacciona; la historia real es la ruta por defecto. Hardware en fechas reales.</td></tr>
+  <tr><td>Enseñar software</td><td><span class="tag user">USUARIO</span></td><td>Tanto hardware como software: el modelo de cada época, inferencia y entrenamiento visibles, para alguien que parte de cero.</td></tr>
+  <tr><td>Cerebro</td><td><span class="tag call">PROPUESTA</span></td><td>Arquitectura del modelo mapeada sobre las GPUs que la ejecutan; modos inferencia y entrenamiento.</td></tr>
+  <tr><td>Tiempo</td><td><span class="tag call">PROPUESTA</span></td><td>Economía semanal; operación en pasos de 1 h.</td></tr>
+  <tr><td>Laboratorio y rivales ficticios</td><td><span class="tag call">PROPUESTA</span></td><td>3–5 rivales con personalidad: gastador agresivo, seguridad primero, modelos abiertos, respaldado por gran tecnológica, respaldado por un Estado.</td></tr>
+  <tr><td>Tick semanal y ~5 h de partida</td><td><span class="tag call">PROPUESTA</span></td><td>Se ajusta probando M1.</td></tr>
+  <tr><td>Fórmulas de economía</td><td><span class="tag call">PROPUESTA</span></td><td>De research 03 §10, calibrar con datos reales por año.</td></tr>
+  <tr><td>Feed con IA real opcional</td><td><span class="tag open">ABIERTO</span></td><td>¿Permitir que el jugador conecte su clave para conversaciones generadas?</td></tr>
+  <tr><td>Epílogo 2026+</td><td><span class="tag open">ABIERTO</span></td><td>Vera Rubin, Kyber… ¿modo libre tras el final?</td></tr>
+  <tr><td>Personajes</td><td><span class="tag open">ABIERTO</span></td><td>Estilo de los empleados en 3D (estilizado sencillo vs. realista).</td></tr>
+  <tr><td>Incoherencias de assets</td><td><span class="tag open">ABIERTO</span></td><td>Issue SL-3 (alturas InRow/rack, DGX-1, bandejas NVL72).</td></tr>
+</table>
+
+</main>
+<script>
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+  const ink = dark ? '#c9d4df' : '#3a4450', grid = dark ? '#252c35' : '#e3e7ec';
+  Chart.defaults.color = ink; Chart.defaults.borderColor = grid; Chart.defaults.maintainAspectRatio = false;
+
+  new Chart(document.getElementById('chPerf'), {
+    type: 'line',
+    data: { labels: ['2017 1080 Ti', '2017 V100', '2020 A100', '2022 H100', '2024 B200', '2025 GB200 (por GPU)'],
+      datasets: [{ label: 'TFLOPS IA útiles por GPU (aprox.)', data: [11, 125, 312, 990, 2250, 2500], borderColor: '#0a8f72', backgroundColor: '#0a8f7233', fill: true, tension: .25 }] },
+    options: { scales: { y: { type: 'logarithmic', title: { display: true, text: 'TFLOPS (log)' } } } }
+  });
+  new Chart(document.getElementById('chRack'), {
+    type: 'bar',
+    data: { labels: ['Sala clásica', '2017 V100', '2020 A100', '2022 H100', '2025 GB200 NVL72'],
+      datasets: [{ label: 'kW por rack (aprox.)', data: [8, 15, 25, 40, 132], backgroundColor: ['#9aa7b4', '#3d5afe', '#3d5afe', '#3d5afe', '#e05a2b'] }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: 'kW / rack' } } } }
+  });
+  new Chart(document.getElementById('chPrice'), {
+    type: 'line',
+    data: { labels: ['Año 0', 'Año 1', 'Año 2', 'Año 3', 'Año 4'],
+      datasets: [
+        { label: 'Mundo real (~×0,1/año)', data: [100, 10, 1, 0.1, 0.01], borderColor: '#b26a00', tension: .2 },
+        { label: 'Juego (×0,25/año)', data: [100, 25, 6.25, 1.56, 0.39], borderColor: '#0a8f72', tension: .2 } ] },
+    options: { scales: { y: { type: 'logarithmic', title: { display: true, text: 'precio relativo (log)' } } } }
+  });
+</script>
+</body>
+</html>
