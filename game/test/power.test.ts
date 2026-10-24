@@ -44,7 +44,7 @@ describe('thermals', () => {
     expect(gpuPerfFactor(s.gpus[0]!)).toBe(0.7);
   });
   it('three GPUs on the open frame do not throttle', () => {
-    const s = advance(rigWith(3, 'open_frame'), d, 48);
+    const s = advance(rigWith(3, 'open_frame'), d, 500);
     expect(Math.max(...s.gpus.map((g) => g.tempC))).toBeLessThan(84);
     expect(s.gpus.every((g) => g.perf === 1)).toBe(true);
   });

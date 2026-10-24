@@ -82,8 +82,8 @@
       "approx": true
     },
     "neighbourOpenFrameC": {
-      "value": 2,
-      "source": "Game-design estimate: extra degrees per neighbouring GPU on an open mining frame (free air flow)",
+      "value": 1.5,
+      "source": "Game-design estimate: open-air frame, 1.5 C per neighbour so 3 cards settle just under the throttle point",
       "approx": true
     },
     "smoothing": {
