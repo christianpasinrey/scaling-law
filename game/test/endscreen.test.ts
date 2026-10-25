@@ -6,7 +6,7 @@ import pulso from '../data/pulso.es.json';
 import reality from '../data/reality.es.json';
 import { loadData, newGame } from '../src/sim';
 import type { GameState, LedgerWeek } from '../src/sim';
-import { diagnose, factsAround, parseFacts, summarize } from '../src/ui/endscreen';
+import { diagnose, factsAround, idleAdvice, parseFacts, summarize } from '../src/ui/endscreen';
 
 const d = loadData(structuredClone({ hardware, world, products, pulso }));
 const week = (n: number, lines: Record<string, number>): LedgerWeek => {
@@ -90,10 +90,30 @@ describe('diagnose (bankruptcy)', () => {
   it('names what went wrong', () => {
     const s = newGame(d, 1, 'L');
     const keys = diagnose({ ...s, outcome: 'bankrupt', allocation: { 'gpu-1': 'idle' } }, d);
-    expect(keys).toEqual(['no_paper', 'idle_gpus']);
+    expect(keys).toEqual(['no_paper', 'idle_gpus_rent']);
     const shopper = played({ outcome: 'bankrupt', ledger: [week(1, { product: 0, consulting: 0, rental: 0, electricity: 40 })], allocation: { 'gpu-1': 'train', 'gpu-2': 'train', 'gpu-3': 'train', 'gpu-4': 'train' } });
     const done = { ...shopper, jobs: shopper.jobs.map((j) => (j.id === 'replicate_paper' ? { ...j, status: 'done' as const } : j)) };
     expect(diagnose(done, d)).toEqual(['no_product_revenue', 'hardware_over_revenue']);
+  });
+});
+
+describe('idleAdvice (only advice that is true on the end date)', () => {
+  const HOUR_2018_04_02 = Math.ceil((Date.parse('2018-04-02T00:00:00Z') - Date.parse('2017-06-12T17:57:00Z')) / 3_600_000);
+  const base = (over: Partial<GameState> = {}): GameState => ({ ...newGame(d, 1, 'L'), outcome: 'bankrupt', allocation: { 'gpu-1': 'idle' }, ...over });
+  it('suggests renting during the boom (4 $/day > 250 W × 24 h × 0,35 $/kWh ≈ 2,10 $/day)', () => {
+    expect(idleAdvice(base(), d)).toEqual(['idle_gpus_rent']);
+  });
+  it('does not suggest renting after the boom (1 $/day < 2,10 $/day of electricity)', () => {
+    expect(idleAdvice(base({ hour: HOUR_2018_04_02 }), d)).toEqual([]);
+  });
+  it('suggests serving only when the API was launched and demand went unserved', () => {
+    const s = base({ hour: HOUR_2018_04_02 });
+    expect(idleAdvice({ ...s, product: { ...s.product, launched: false, demandMCharsH: 5, servedMCharsH: 0 } }, d)).toEqual([]);
+    expect(idleAdvice({ ...s, product: { ...s.product, launched: true, demandMCharsH: 5, servedMCharsH: 5 } }, d)).toEqual([]);
+    expect(idleAdvice({ ...s, product: { ...s.product, launched: true, demandMCharsH: 5, servedMCharsH: 2 } }, d)).toEqual(['idle_gpus_serve']);
+  });
+  it('says nothing when no GPU is idle', () => {
+    expect(idleAdvice(base({ allocation: { 'gpu-1': 'train' } }), d)).toEqual([]);
   });
 });
 

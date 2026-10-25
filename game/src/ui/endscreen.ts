@@ -3,6 +3,7 @@
 import type { GameData, GameState } from '../sim/types';
 import { dateOf } from '../sim/time';
 import { newGame } from '../sim/state';
+import { rentalUsdPerDayAt } from '../sim/economy';
 import { el } from './dom';
 import { formatDay, formatInt, formatUsd, t } from './format';
 import type { TextKey } from './format';
@@ -86,7 +87,7 @@ export function summarize(s: GameState, d: GameData): EndSummary {
   };
 }
 
-export type Diagnosis = 'no_paper' | 'no_product_revenue' | 'hardware_over_revenue' | 'idle_gpus';
+export type Diagnosis = 'no_paper' | 'no_product_revenue' | 'hardware_over_revenue' | 'idle_gpus_rent' | 'idle_gpus_serve';
 
 /** What went wrong, in the order the player can act on it. */
 export function diagnose(s: GameState, d: GameData): Diagnosis[] {
@@ -97,7 +98,24 @@ export function diagnose(s: GameState, d: GameData): Diagnosis[] {
   else if ((r.revenue.find((l) => l.key === 'product')?.usd ?? 0) <= 0) out.push('no_product_revenue');
   const hw = r.costs.find((c) => c.key === 'hardware')?.usd ?? 0;
   if (hw > 0 && hw > r.revenueUsd) out.push('hardware_over_revenue');
-  if (s.gpus.some((g) => (s.allocation[g.id] ?? 'idle') === 'idle')) out.push('idle_gpus');
+  out.push(...idleAdvice(s, d));
+  return out;
+}
+
+/**
+ * What idle GPUs could have earned, only when it is true on the end date:
+ * renting, if the rate beats that GPU's full-load electricity per day (watts/1000 × 24 × $/kWh);
+ * serving, if the API was launched and demand was going unserved.
+ */
+export function idleAdvice(s: GameState, d: GameData): Diagnosis[] {
+  const idle = s.gpus.filter((g) => (s.allocation[g.id] ?? 'idle') === 'idle');
+  if (idle.length === 0) return [];
+  const out: Diagnosis[] = [];
+  const rent = rentalUsdPerDayAt(s, d);
+  const kwh = d.world.electricityUsdPerKwh.value;
+  const powerPerDay = (model: string): number => ((d.gpus.find((m) => m.id === model)?.watts.value ?? 0) / 1000) * 24 * kwh;
+  if (idle.some((g) => rent > powerPerDay(g.model))) out.push('idle_gpus_rent');
+  if (s.product.launched && fin(s.product.demandMCharsH) > fin(s.product.servedMCharsH)) out.push('idle_gpus_serve');
   return out;
 }
 

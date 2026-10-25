@@ -274,5 +274,6 @@
   "end.why.no_paper": "No llegaste a replicar el paper: sin modelo no hay API que vender.",
   "end.why.no_product_revenue": "La API de traducción no llegó a facturar: asigna GPUs a «Servir».",
   "end.why.hardware_over_revenue": "El hardware costó más de lo que ingresaste en toda la partida.",
-  "end.why.idle_gpus": "Había GPUs paradas: Alquilar o Servir habría traído algo de dinero."
+  "end.why.idle_gpus_rent": "Había GPUs paradas: alquiladas habrían dejado más de lo que gastan en luz.",
+  "end.why.idle_gpus_serve": "Había GPUs paradas mientras clientes de tu API esperaban: ponerlas a Servir habría atendido esa demanda."
 }
