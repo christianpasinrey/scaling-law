@@ -45,7 +45,7 @@
   },
   "templates": {
     "latency": [
-      "Llevo diez minutos esperando a que me traduzca los comentarios de un repositorio. ¿Está caído?",
+      "Mi traductor se queda pensando un buen rato con los comentarios de un repositorio. ¿Está caído?",
       "Con tanta espera el traductor no me sirve para mis correos del trabajo. Va lentísimo.",
       "Subí un contrato de 40 páginas y la traducción tarda una eternidad. Así no se puede.",
       "Mis apuntes de clase llevan toda la tarde en cola. ¿Alguien más tiene problemas de velocidad?"
@@ -57,7 +57,7 @@
       "Los correos formales me salen demasiado literales. Esperaba algo más fluido."
     ],
     "price": [
-      "Veinte dólares el millón de caracteres está bien, pero este precio ya es demasiado para mis correos.",
+      "El millón de caracteres sale carísimo para traducir mis correos. Así no compensa.",
       "Con lo que cobráis ahora me sale más barato pagar a un traductor para mis contratos.",
       "He dejado de traducir mis apuntes aquí: la tarifa se ha disparado.",
       "Subir tanto el precio para traducir comentarios de código no tiene sentido."
@@ -66,12 +66,18 @@
       "Traduje el manual completo de mi proyecto en una tarde. Esto funciona de maravilla.",
       "Mis correos a clientes de fuera salen perfectos y rapidísimos. Gracias.",
       "Por fin un traductor que entiende los comentarios de mi código. Recomendado.",
-      "Mis apuntes de inglés ya son legibles. Les cuento a mis compañeros que lo usen."
+      "Mis apuntes de inglés ya son legibles. Les he dicho a mis compañeros que lo usen."
     ]
   },
   "news": {
     "titanV": "Sale la Titan V de NVIDIA: 2.999 $ y Tensor Cores para entrenar bastante más rápido que una 1080 Ti.",
     "seedRound": "Un inversor se ha fijado en tu laboratorio y te ofrece una ronda semilla. Puedes aceptarla o rechazarla.",
     "seedRoundClosed": "Has cerrado la ronda semilla. Tu laboratorio deja de ser un proyecto de garaje."
-  }
+  },
+  "chatterCauses": [
+    "latency",
+    "praise",
+    "price",
+    "quality"
+  ]
 }

@@ -186,3 +186,60 @@ describe('integration with advance', () => {
     expect(s.pulso.length).toBeLessThanOrEqual(200);
   });
 });
+
+describe('daily cap only for customer chatter (R14)', () => {
+  const chatter = (s: GameState, n: number): GameState => {
+    const causes = ['latency', 'quality', 'price', 'praise'] as const;
+    for (let i = 0; i < n; i++) {
+      const cause = causes[i % 4] as (typeof causes)[number];
+      s = pushPulso(s, d, { id: `c${i}`, hour: s.hour, cause, text: 't', count: 1, focus: { kind: 'product' } });
+    }
+    return s;
+  };
+
+  it('news and outage still appear after 3 chatter items that day', () => {
+    let s = chatter(at(base(), 50), 3);
+    s = pushPulso(s, d, { id: 'news:a', hour: 50, cause: 'news', text: 'n', count: 1 });
+    s = pushPulso(s, d, { id: 'out', hour: 50, cause: 'outage', text: 'o', count: 1, focus: { kind: 'power' } });
+    expect(s.pulso).toHaveLength(5);
+  });
+
+  it('exempt items do not consume the budget', () => {
+    let s = at(base(), 50);
+    s = pushPulso(s, d, { id: 'news:a', hour: 50, cause: 'news', text: 'n', count: 1 });
+    s = pushPulso(s, d, { id: 'out', hour: 50, cause: 'outage', text: 'o', count: 1, focus: { kind: 'power' } });
+    s = chatter(s, 3);
+    expect(s.pulso).toHaveLength(5);
+    expect(s.pulsoDay?.created).toBe(3);
+  });
+
+  it('over-cap chatter never touches a news or outage item', () => {
+    let s = at(base(), 50);
+    s = pushPulso(s, d, { id: 'news:a', hour: 50, cause: 'news', text: 'n', count: 1 });
+    s = pushPulso(s, d, { id: 'out', hour: 50, cause: 'outage', text: 'o', count: 1, focus: { kind: 'power' } });
+    s = chatter(s, 3);
+    s = chatter({ ...s, pulso: s.pulso }, 12);
+    for (const p of s.pulso.filter((x) => x.cause === 'news' || x.cause === 'outage')) expect(p.count).toBe(1);
+    // A second distinct news is its own item, not a bump of the first.
+    s = pushPulso(s, d, { id: 'news:b', hour: 50, cause: 'news', text: 'n2', count: 1 });
+    expect(s.pulso.filter((x) => x.cause === 'news')).toHaveLength(2);
+  });
+
+  it('the replicate_paper milestone is news', () => {
+    const s = chatter(at(base(), 50), 3);
+    const out = pushPulso(s, d, { id: 'news:replicate_paper', hour: 50, cause: 'news', text: 'Has replicado el paper', count: 1 });
+    expect(out.pulso.at(-1)?.text).toBe('Has replicado el paper');
+  });
+});
+
+describe('emitPulso determinism', () => {
+  it('same seed and state give an identical feed', () => {
+    const feed = () => {
+      const rng = restoreRng(42);
+      let s = launched({ latencyMs: 5000, satisfaction: 0.9, priceUsdPerMChars: 100 });
+      for (let h = 0; h < 24 * 15; h++) s = emitPulso(at(s, h), d, rng);
+      return JSON.stringify([s.pulso, s.pulsoDay, rng.state()]);
+    };
+    expect(feed()).toBe(feed());
+  });
+});

@@ -168,7 +168,7 @@ describe('completion', () => {
     expect(job(s).status).toBe('done');
     expect(job(s).doneP100h).toBe(96);
     expect(s.reputation).toBe(15);
-    expect(s.pulso.some((p) => p.cause === 'praise' && p.text === 'Has replicado el paper')).toBe(true);
+    expect(s.pulso.some((p) => p.cause === 'news' && p.text === 'Has replicado el paper')).toBe(true);
     expect(job(s, 'translation_v2').status).toBe('ready');
     expect(s.product.launched).toBe(true);
   });

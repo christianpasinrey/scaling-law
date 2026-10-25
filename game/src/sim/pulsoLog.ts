@@ -19,8 +19,9 @@ export function gpuLabel(d: GameData, g: OwnedGpu): string {
  * The single entry point for Pulso items (ruling R13).
  * - Same cause and focus as an item created/refreshed in the last `dedupeHours`: that item gets count + 1 and
  *   hour = now (moved to the end of the feed); no new item.
- * - At most `maxNewPerDay` new items per game day. A further one is merged into the most recent item of its
- *   cause, or dropped if there is none. Command warnings are player feedback: always created, never counted.
+ * - At most `maxNewPerDay` new customer-chatter items per game day (R14). A further one is merged into the most
+ *   recent item of its cause, or dropped if there is none. News, outage and warning are exempt: they always
+ *   create or aggregate by identity and never use the budget.
  * - Only the last `maxItems` items are kept.
  */
 export function pushPulso(s: GameState, d: GameData, item: PulsoItem): GameState {
@@ -38,7 +39,7 @@ export function pushPulso(s: GameState, d: GameData, item: PulsoItem): GameState
     if (now - p.hour < lim.dedupeHours.value && keyOf(p) === key) return bump(i);
   }
 
-  const exempt = item.cause === 'warning';
+  const exempt = !d.pulso.chatterCauses.includes(item.cause);
   const day = Math.floor(now / HOURS_PER_DAY);
   const created = s.pulsoDay?.day === day ? s.pulsoDay.created : 0;
   if (!exempt && created >= lim.maxNewPerDay.value) {

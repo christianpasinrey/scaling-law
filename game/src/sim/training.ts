@@ -101,9 +101,9 @@ function complete(s: GameState, d: GameData, id: TrainingJob['id']): GameState {
       product: { ...s.product, launched: true },
     };
     return pushPulso(next, d, {
-      id: 'praise:replicate_paper',
+      id: 'news:replicate_paper',
       hour: s.hour,
-      cause: 'praise',
+      cause: 'news',
       text: 'Has replicado el paper',
       count: 1,
     });

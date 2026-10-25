@@ -171,6 +171,8 @@ export interface PulsoData {
     maxNewPerDay: Sourced<number>;
     maxItems: Sourced<number>;
   };
+  /** Causes that count against the daily cap of new items (customer chatter). News, outage and warning are exempt. */
+  chatterCauses: PulsoItem['cause'][];
   templates: Record<PulsoTemplateCause, string[]>;
   news: { titanV: string; seedRound: string; seedRoundClosed: string };
 }

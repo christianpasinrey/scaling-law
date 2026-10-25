@@ -1,4 +1,4 @@
-import type { PulsoData, PulsoTemplateCause, EconomyData, GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
+import type { PulsoItem, PulsoData, PulsoTemplateCause, EconomyData, GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
 
 export class DataError extends Error {
   constructor(message: string) {
@@ -200,6 +200,7 @@ function pulsoData(v: unknown, path: string): PulsoData {
   const lim = obj(o.limits, `${path}.limits`);
   const tpl = obj(o.templates, `${path}.templates`);
   const news = obj(o.news, `${path}.news`);
+  if (num(obj(o.cadenceH, `${path}.cadenceH`).value, `${path}.cadenceH.value`) <= 0) throw new DataError(`${path}.cadenceH.value: expected > 0`);
   const causes: PulsoTemplateCause[] = ['latency', 'quality', 'price', 'praise'];
   const templates = {} as Record<PulsoTemplateCause, string[]>;
   for (const c of causes) {
@@ -220,6 +221,7 @@ function pulsoData(v: unknown, path: string): PulsoData {
       maxNewPerDay: sourced(lim.maxNewPerDay, `${path}.limits.maxNewPerDay`),
       maxItems: sourced(lim.maxItems, `${path}.limits.maxItems`),
     },
+    chatterCauses: arr(o.chatterCauses, `${path}.chatterCauses`).map((c, i) => str(c, `${path}.chatterCauses[${i}]`) as PulsoItem['cause']),
     templates,
     news: {
       titanV: str(news.titanV, `${path}.news.titanV`),
