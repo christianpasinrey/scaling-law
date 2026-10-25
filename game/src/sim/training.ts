@@ -79,11 +79,14 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
 
   let lossCurve = job.lossCurve;
   if (!rolledBack && s.hour % job.checkpointEveryH === 0) {
+    // A point only when training moved since the last checkpoint: no flat points from hours with no trainers.
+    if (done !== checkpoint) lossCurve = [...lossCurve, lossAt(d, done / job.workP100h)];
     checkpoint = done;
-    lossCurve = [...lossCurve, lossAt(d, done / job.workP100h)];
   }
 
   const finished = done >= job.workP100h;
+  // The curve always ends at the final loss (unless this very checkpoint already recorded it).
+  if (finished && lossCurve.length === job.lossCurve.length) lossCurve = [...lossCurve, lossAt(d, 1)];
   const updated: TrainingJob = { ...job, doneP100h: done, checkpointP100h: checkpoint, lossCurve, status: finished ? 'done' : 'running' };
   let next: GameState = {
     ...cur,
@@ -109,9 +112,10 @@ function complete(s: GameState, d: GameData, id: TrainingJob['id']): GameState {
       id: 'news:replicate_paper',
       hour: s.hour,
       cause: 'news',
-      text: 'Has replicado el paper',
+      text: d.pulso.news.replicatePaper,
       count: 1,
     });
   }
-  return { ...s, reputation: s.reputation + d.products.economy.reputation.translationV2.value, flags: { ...s.flags, model_v2: true } };
+  const next: GameState = { ...s, reputation: s.reputation + d.products.economy.reputation.translationV2.value, flags: { ...s.flags, model_v2: true } };
+  return pushPulso(next, d, { id: 'news:translation_v2', hour: s.hour, cause: 'news', text: d.pulso.news.translationV2, count: 1 });
 }

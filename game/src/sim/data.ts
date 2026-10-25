@@ -233,6 +233,8 @@ function pulsoData(v: unknown, path: string): PulsoData {
       titanV: str(news.titanV, `${path}.news.titanV`),
       seedRound: str(news.seedRound, `${path}.news.seedRound`),
       seedRoundClosed: str(news.seedRoundClosed, `${path}.news.seedRoundClosed`),
+      replicatePaper: str(news.replicatePaper, `${path}.news.replicatePaper`),
+      translationV2: str(news.translationV2, `${path}.news.translationV2`),
     },
   };
 }

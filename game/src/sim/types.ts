@@ -177,7 +177,7 @@ export interface PulsoData {
   /** Causes that count against the daily cap of new items (customer chatter). News, outage and warning are exempt. */
   chatterCauses: PulsoItem['cause'][];
   templates: Record<PulsoTemplateCause, string[]>;
-  news: { titanV: string; seedRound: string; seedRoundClosed: string };
+  news: { titanV: string; seedRound: string; seedRoundClosed: string; replicatePaper: string; translationV2: string };
 }
 
 export interface GameData {

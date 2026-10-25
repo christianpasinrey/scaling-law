@@ -107,6 +107,39 @@ describe('progress', () => {
   });
 });
 
+describe('loss curve', () => {
+  it('ends at the final loss lossAt(1) when the job completes', () => {
+    let s = training(1);
+    while (job(s).status === 'running') s = advance(s, dNoFail, 1);
+    const curve = job(s).lossCurve;
+    expect(curve.at(-1)).toBeCloseTo(lossAt(d, 1), 10);
+    expect(curve.filter((v) => v === lossAt(d, 1))).toHaveLength(1);
+  });
+  it('adds no point at a checkpoint where nothing trained', () => {
+    let s = advance(training(1), dNoFail, 5); // steps at hours 0..4; checkpoints at 0 and 4 hold all progress
+    const n = job(s).lossCurve.length;
+    s = { ...s, allocation: { 'gpu-1': 'idle' } };
+    s = advance(s, dNoFail, 24); // six checkpoints with no trainer
+    expect(job(s).lossCurve.length).toBe(n);
+    expect(new Set(job(s).lossCurve).size).toBe(job(s).lossCurve.length);
+  });
+});
+
+describe('completion news', () => {
+  it('replicating the paper and finishing v2 each post a Pulso news item from data', () => {
+    let s = training(6);
+    while (job(s).status === 'running') s = advance(s, dNoFail, 1);
+    expect(s.pulso.some((p) => p.cause === 'news' && p.text === d.pulso.news.replicatePaper)).toBe(true);
+    expect(d.pulso.news.replicatePaper.endsWith('.')).toBe(true);
+    s = { ...s, jobs: s.jobs.map((j) => (j.id === 'translation_v2' ? { ...j, status: 'running' as const } : j)) };
+    let h = 0;
+    while (job(s, 'translation_v2').status === 'running' && h++ < 5000) s = advance(s, dNoFail, 1);
+    expect(job(s, 'translation_v2').status).toBe('done');
+    expect(s.flags.model_v2).toBe(true);
+    expect(s.pulso.some((p) => p.cause === 'news' && p.text === d.pulso.news.translationV2)).toBe(true);
+  });
+});
+
 describe('failures', () => {
   it('a forced failure returns progress to the last checkpoint, not to 0', () => {
     let s = training(1);
@@ -168,7 +201,7 @@ describe('completion', () => {
     expect(job(s).status).toBe('done');
     expect(job(s).doneP100h).toBe(96);
     expect(s.reputation).toBe(15);
-    expect(s.pulso.some((p) => p.cause === 'news' && p.text === 'Has replicado el paper')).toBe(true);
+    expect(s.pulso.some((p) => p.cause === 'news' && p.text === 'Has replicado el paper.')).toBe(true);
     expect(job(s, 'translation_v2').status).toBe('ready');
     expect(s.product.launched).toBe(true);
   });

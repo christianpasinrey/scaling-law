@@ -16,6 +16,7 @@ import {
 import i18n from '../../data/i18n.es.json';
 import type { GameData, GameState } from '../sim/types';
 import { lossAt } from '../sim/training';
+import { formatDecimal } from '../ui/format';
 import { brainGpuIds, brainLayout, brainMode, LAST_STEP, lossPanel, nodeGpuState, pulseSpeed, waveRate } from './brainLayout';
 import type { BrainMode, BrainNode, LossPanel, NodeGpuState } from './brainLayout';
 import type { SceneCtx } from './scene';
@@ -255,13 +256,14 @@ void main() {
 const EDGE_FRAG = /* glsl */ `
 uniform float uDim;
 uniform float uShowLegend;
+uniform float uTraining;
 varying float vLevel;
 ${PULSE_GLSL}
 void main() {
   if (vLevel < -0.5) {
-    // All-reduce links between the GPU legend chips (expanded only).
+    // All-reduce links between the GPU legend chips (expanded, training only: serving replicas share no gradients).
     vec3 col = vec3(0.3, 0.38, 0.48) + vec3(0.7, 1.0, 0.95) * allReduce();
-    gl_FragColor = vec4(col, uShowLegend);
+    gl_FragColor = vec4(col, uShowLegend * uTraining);
   } else {
     gl_FragColor = vec4(vec3(0.36, 0.45, 0.56) * uDim + pulseAt(vLevel), 0.9);
   }
@@ -381,7 +383,7 @@ export class BrainView {
     this.edgeMat = new ShaderMaterial({
       vertexShader: EDGE_VERT,
       fragmentShader: EDGE_FRAG,
-      uniforms: { ...shared, uShowLegend: { value: 0 } }, // same uniform objects: one phase update drives both
+      uniforms: { ...shared, uShowLegend: { value: 0 }, uTraining: { value: 0 } }, // same uniform objects: one phase update drives both
       transparent: true,
       depthTest: false,
       depthWrite: false,
@@ -482,6 +484,8 @@ export class BrainView {
     u.uMode!.value = this.speed > 0 ? MODE_CODE[this.mode] : 0;
     u.uDim!.value = this.mode === 'idle' ? 0.45 : 1;
     u.uGpuCount!.value = ids.length;
+    // Structural, not animated: the bracket stays while a training job is paused, and never shows in inference.
+    this.edgeMat.uniforms.uTraining!.value = this.mode === 'training' ? 1 : 0;
 
     // Per-GPU colour (palette by owned order, so a GPU keeps its colour) and state.
     for (let i = 0; i < ids.length; i++) {
@@ -671,9 +675,9 @@ export class BrainView {
     const L = this.loss;
     const lossTxt =
       L.kind === 'live'
-        ? `${T('brain.loss')} ${L.loss.toFixed(2)} · ${Math.round(100 * L.fraction)} % — ${T('brain.loss.note')}`
+        ? `${T('brain.loss')} ${formatDecimal(L.loss, 2)} · ${Math.round(100 * L.fraction)} % — ${T('brain.loss.note')}`
         : L.kind === 'final'
-          ? `${T('brain.loss.final')} ${L.loss.toFixed(2)} — ${T('brain.loss.note')}`
+          ? `${T('brain.loss.final')} ${formatDecimal(L.loss, 2)} — ${T('brain.loss.note')}`
           : '';
     const rows = s && d ? this.legend(s, d) : [];
     const key = `${this.expanded}|${this.mode}|${lossTxt}|${rows.map((r) => r.text + r.state).join(',')}|${this.vw}x${this.vh}`;

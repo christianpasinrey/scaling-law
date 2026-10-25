@@ -48,7 +48,7 @@
       "Mi traductor se queda pensando un buen rato con los comentarios de un repositorio. ¿Está caído?",
       "Con tanta espera el traductor no me sirve para mis correos del trabajo. Va lentísimo.",
       "Subí un contrato de 40 páginas y la traducción tarda una eternidad. Así no se puede.",
-      "Mis apuntes de clase llevan toda la tarde en cola. ¿Alguien más tiene problemas de velocidad?"
+      "Con mis apuntes de clase, cada párrafo tarda varios segundos. ¿Alguien más tiene problemas de velocidad?"
     ],
     "quality": [
       "Tradujo «bank» como «banco» en un texto sobre ríos. Se nota que el modelo es muy básico.",
@@ -72,7 +72,9 @@
   "news": {
     "titanV": "Sale la Titan V de NVIDIA: 2.999 $ y Tensor Cores para entrenar bastante más rápido que una 1080 Ti.",
     "seedRound": "Un inversor se ha fijado en tu laboratorio y te ofrece una ronda semilla. Puedes aceptarla o rechazarla.",
-    "seedRoundClosed": "Has cerrado la ronda semilla. Tu laboratorio deja de ser un proyecto de garaje."
+    "seedRoundClosed": "Has cerrado la ronda semilla. Tu laboratorio deja de ser un proyecto de garaje.",
+    "replicatePaper": "Has replicado el paper.",
+    "translationV2": "Has terminado de entrenar el modelo de traducción v2: tu API traduce mejor desde ahora."
   },
   "chatterCauses": [
     "latency",
