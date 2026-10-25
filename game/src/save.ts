@@ -10,7 +10,9 @@ const REQUIRED: readonly string[] = [
   'version', 'seed', 'rng', 'hour', 'cashUsd', 'gpus', 'rigs', 'jobs', 'product', 'pulso', 'ledger',
 ];
 
-export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: 'none' | 'corrupt' | 'version' };
+export type ImportResult = { ok: true; state: GameState } | { ok: false; reason: 'corrupt' | 'version' };
+/** 'none' = store readable and slot-1 empty; 'unavailable' = storage itself failed (never overwrite on this). */
+export type LoadResult = ImportResult | { ok: false; reason: 'none' | 'unavailable' };
 
 /** True when the game week index changed between two hours (autosave trigger). */
 export function shouldAutosave(prevHour: number, nextHour: number): boolean {
@@ -18,7 +20,7 @@ export function shouldAutosave(prevHour: number, nextHour: number): boolean {
 }
 
 /** Parses and validates serialized state. Never throws. */
-function parseSave(text: unknown): LoadResult {
+function parseSave(text: unknown): ImportResult {
   if (typeof text !== 'string') return { ok: false, reason: 'corrupt' };
   let raw: unknown;
   try {
@@ -29,6 +31,11 @@ function parseSave(text: unknown): LoadResult {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { ok: false, reason: 'corrupt' };
   const o = raw as Record<string, unknown>;
   if (REQUIRED.some((k) => !(k in o))) return { ok: false, reason: 'corrupt' };
+  const nums = ['version', 'seed', 'rng', 'hour', 'cashUsd'];
+  const arrays = ['gpus', 'rigs', 'jobs', 'pulso', 'ledger'];
+  if (nums.some((k) => typeof o[k] !== 'number' || !Number.isFinite(o[k]))) return { ok: false, reason: 'corrupt' };
+  if (arrays.some((k) => !Array.isArray(o[k]))) return { ok: false, reason: 'corrupt' };
+  if (typeof o.product !== 'object' || o.product === null || Array.isArray(o.product)) return { ok: false, reason: 'corrupt' };
   if (o.version !== 1) return { ok: false, reason: 'version' };
   return { ok: true, state: raw as GameState };
 }
@@ -62,7 +69,7 @@ export async function saveGame(s: GameState): Promise<void> {
   }
 }
 
-/** Loads slot-1. Never throws: storage failures are reported as 'none'. */
+/** Loads slot-1. Never throws: storage failures are reported as 'unavailable'. */
 export async function loadGame(): Promise<LoadResult> {
   let stored: unknown;
   try {
@@ -77,7 +84,7 @@ export async function loadGame(): Promise<LoadResult> {
       db.close();
     }
   } catch {
-    return { ok: false, reason: 'none' };
+    return { ok: false, reason: 'unavailable' };
   }
   if (stored === undefined) return { ok: false, reason: 'none' };
   return parseSave(stored);
@@ -100,7 +107,7 @@ export function exportFileName(s: GameState): string {
 }
 
 /** Reads an exported file and validates it like loadGame. Never throws. */
-export async function importSave(file: File | Blob): Promise<LoadResult> {
+export async function importSave(file: File | Blob): Promise<ImportResult> {
   try {
     return parseSave(await file.text());
   } catch {

@@ -1,12 +1,11 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
 import { loadData, newGame } from '../src/sim';
-import { exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave } from '../src/save';
-import { DB_NAME, STORE, SLOT_KEY } from '../src/save';
+import { DB_NAME, SLOT_KEY, STORE, exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave } from '../src/save';
 
 const d = loadData(structuredClone({ hardware, world, products, pulso }));
 const fresh = () => ({ ...newGame(d, 42, 'Garage Lab'), hour: 200, cashUsd: 8123.45 });
@@ -69,6 +68,30 @@ describe('save/load', () => {
   it('version 99 is reported as version', async () => {
     await rawPut(JSON.stringify({ ...fresh(), version: 99 }));
     expect(await loadGame()).toEqual({ ok: false, reason: 'version' });
+  });
+});
+
+describe('storage failure and scalar validation', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('reports unavailable when indexedDB.open fails', async () => {
+    vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+      const req = {} as IDBOpenDBRequest;
+      setTimeout(() => req.onerror?.(new Event('error')), 0);
+      return req;
+    });
+    expect(await loadGame()).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('wrong scalar or container types are corrupt', async () => {
+    const bad: Record<string, unknown>[] = [
+      { hour: '5' }, { seed: null }, { rng: Number.NaN }, { cashUsd: 'x' }, { version: '1' },
+      { gpus: {} }, { rigs: 'x' }, { jobs: null }, { pulso: 1 }, { ledger: {} }, { product: [] }, { product: null },
+    ];
+    for (const patch of bad) {
+      await rawPut(JSON.stringify({ ...fresh(), ...patch }));
+      expect(await loadGame(), JSON.stringify(patch)).toEqual({ ok: false, reason: 'corrupt' });
+    }
   });
 });
 
