@@ -1,11 +1,11 @@
-import { dateOf } from './clock';
+import { HOURS_PER_WEEK } from './state';
+import { dateOf } from './time';
 import { nextId } from './ids';
 import { appendPulso } from './pulsoLog';
 import type { Rng } from './rng';
 import type { Contract, GameData, GameState, Grant, LedgerWeek } from './types';
 
 const HOURS_PER_DAY = 24;
-const HOURS_PER_WEEK = 168;
 
 /**
  * Hourly GPU rental accrual. Every GPU allocated to 'rent' that is alive (perf > 0) while the breaker holds
@@ -16,8 +16,8 @@ export function stepRental(s: GameState, d: GameData): GameState {
   const renting = s.gpus.filter((g) => s.allocation[g.id] === 'rent' && g.perf > 0).length;
   if (renting === 0) return s;
   const r = d.world.rentalUsdPerDay;
-  // ISO strings compare chronologically; the date-only end sorts before any instant on that day.
-  const perDay = dateOf(s) < r.boomEndIso ? r.boom.value : r.after.value;
+  // The boom lasts through boomEndIso (a calendar day) inclusive: compare the UTC date part.
+  const perDay = dateOf(s).slice(0, 10) <= r.boomEndIso.slice(0, 10) ? r.boom.value : r.after.value;
   return { ...s, weekRentUsd: s.weekRentUsd + (renting * perDay) / HOURS_PER_DAY };
 }
 
@@ -116,7 +116,7 @@ export function settleWeek(s: GameState, d: GameData, rng: Rng): GameState {
         id: 'news:bankrupt',
         hour: next.hour,
         cause: 'news',
-        text: `${next.labName} cierra: cuatro semanas seguidas sin caja y sin salida.`,
+        text: `${next.labName} cierra: ${eco.bankruptcyNegativeWeeks.value} semanas seguidas sin caja y sin salida.`,
         count: 1,
       }),
     };

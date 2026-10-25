@@ -136,3 +136,17 @@ describe('loadData', () => {
     }
   });
 });
+
+describe('data files encoding', () => {
+  it('no source string contains mojibake', () => {
+    const bad = /Â|Ã|â€/;
+    const walk = (v: unknown, path: string): void => {
+      if (typeof v === 'string') {
+        if (path.endsWith('.source')) expect(v, path).not.toMatch(bad);
+      } else if (v && typeof v === 'object') {
+        for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
+      }
+    };
+    walk(raw(), 'data');
+  });
+});

@@ -1,4 +1,4 @@
-import { dateOf } from './clock';
+import { dateOf } from './time';
 import { nextId } from './ids';
 import type { Alloc, GameData, GameState, PulsoItem, RigModel } from './types';
 

@@ -38,7 +38,7 @@
   "rentalUsdPerDay": {
     "boom": {
       "value": 4,
-      "source": "approx. game-design estimate: 2017-2018 crypto-mining boom GPU rental",
+      "source": "approx. game-design estimate: 2017-2018 crypto-mining boom GPU rental; applies through boomEndIso (2018-03-31) inclusive, the 1 $/day rate starts 2018-04-01T00:00Z",
       "approx": true
     },
     "after": {

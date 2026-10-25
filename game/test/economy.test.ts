@@ -5,6 +5,7 @@ import products from '../data/products.json';
 import { loadData } from '../src/sim/data';
 import { advance, applyCommand, newGame } from '../src/sim';
 import { restoreRng } from '../src/sim/rng';
+import { stepRental } from '../src/sim/economy';
 import { offerContracts, offerGrants, settleWeek } from '../src/sim/economy';
 import { stepTraining } from '../src/sim/training';
 import type { GameState, Grant } from '../src/sim/types';
@@ -64,6 +65,15 @@ describe('GPU rental', () => {
     const s0 = { ...renting(), hour: 168 * 58 }; // July 2018, on a week boundary
     const s = advance(s0, d, 168);
     expect(s.ledger[0]!.lines.rental).toBeCloseTo(7, 6);
+  });
+  it('boom rate holds through 2018-03-31 inclusive and drops at 2018-04-01T00:00Z', () => {
+    const msAt = (iso: string) => (Date.parse(iso) - Date.parse('2017-06-12T17:57:00Z')) / 3_600_000;
+    // Game hours land on :57 past each hour.
+    const last = Math.floor(msAt('2018-03-31T23:57:00Z'));
+    const first = Math.ceil(msAt('2018-04-01T00:00:00Z'));
+    const s = renting();
+    expect(stepRental({ ...s, hour: last }, d).weekRentUsd).toBeCloseTo(4 / 24, 10);
+    expect(stepRental({ ...s, hour: first }, d).weekRentUsd).toBeCloseTo(1 / 24, 10);
   });
   it('idle GPUs and a tripped breaker earn nothing', () => {
     expect(advance(base(), d, 168).ledger[0]!.lines.rental).toBe(0);

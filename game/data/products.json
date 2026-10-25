@@ -10,7 +10,7 @@
     "replicate_paper": {
       "workP100h": {
         "value": 96,
-        "source": "https://arxiv.org/abs/1706.03762 \u00c2\u00a75.2: base model, 8 P100 x 12 h = 96 P100-hours",
+        "source": "https://arxiv.org/abs/1706.03762 §5.2: base model, 8 P100 x 12 h = 96 P100-hours",
         "approx": false
       }
     },
