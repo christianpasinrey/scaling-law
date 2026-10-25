@@ -166,9 +166,9 @@
       "short": "Un kilovatio-hora es la energía que gasta algo de 1.000 W funcionando durante una hora.",
       "why": "Los vatios dicen cuánta potencia usa algo en un momento; los kilovatios-hora, cuánta energía ha gastado en total. La factura de la luz se paga por kWh. Una GPU a plena carga todo el día, toda la semana, se nota.",
       "deep": "Energía (kWh) = potencia (W) × horas / 1.000. Una 1080 Ti a 250 W durante 24 h = 6 kWh; a 0,35 $/kWh, unos 2,10 $ al día.",
-      "game": "En el juego la electricidad cuesta 0,35 $/kWh, y es una estimación de diseño, no un dato. La media residencial de EE. UU. en 2017 rondaba 0,13 $/kWh (EIA). Con las tarifas por tramos de California, el kWh de consumo alto ya superaba los 0,30 $ hacia 2012 (PG&E ante la CPUC). El juego usa 0,35 para que un garaje que solo gasta, sin ingresos, se arruine en menos de un año. Se paga en la liquidación semanal.",
+      "game": "En el juego la electricidad cuesta 0,35 $/kWh, y es una estimación de diseño, no un dato. La media residencial de EE. UU. en 2017 rondaba 0,13 $/kWh (EIA). Con las tarifas por tramos de California, el kWh de consumo alto ya rondaba los 0,30 $ hacia 2012 (PG&E ante la CPUC). El juego usa 0,35 para que un garaje que solo gasta, sin ingresos, se arruine en menos de un año. Se paga en la liquidación semanal.",
       "link": "https://en.wikipedia.org/wiki/Kilowatt-hour",
-      "source": "Wikipedia: Kilowatt-hour; EIA (precio residencial medio de EE. UU., 2017)",
+      "source": "Wikipedia: Kilowatt-hour; EIA (precio residencial medio de EE. UU., 2017); PG&E ante la CPUC (2012)",
       "related": [
         "breaker",
         "gpu_rental"
@@ -178,8 +178,8 @@
       "title": "Alquiler de cómputo",
       "short": "Alquilar tu GPU es dejar que otros usen su potencia de cálculo a cambio de dinero.",
       "why": "En 2017 y principios de 2018 la minería de criptomonedas disparó la demanda de tarjetas gráficas, y alquilarlas daba dinero. Mientras está alquilada, la tarjeta no entrena ni sirve tu producto, y sigue gastando luz y calentándose.",
-      "deep": "Beneficio neto por día ≈ tarifa − 0,25 kW × 24 h × precio del kWh. Con 4 $/día: 4 − 0,78 ≈ 3,2 $ por tarjeta.",
-      "game": "Las tarifas son estimaciones de diseño: 4 $/día por 1080 Ti hasta el 31 de marzo de 2018, 1 $/día después.",
+      "deep": "Beneficio neto por día ≈ tarifa − 0,25 kW × 24 h × precio del kWh. Con 4 $/día: 4 − 2,10 ≈ 1,9 $ por tarjeta con la electricidad del juego (0,35 $/kWh); con la media de EE. UU. (0,13 $/kWh) serían ≈ 3,2 $.",
+      "game": "Las tarifas son estimaciones de diseño: 4 $/día por 1080 Ti hasta el 31 de marzo de 2018, 1 $/día después. Desde el 1 de abril de 2018 alquilar pierde dinero: 1 − 2,10 ≈ −1,1 $ por tarjeta y día con la electricidad del juego.",
       "link": "https://en.wikipedia.org/wiki/Cryptocurrency_bubble",
       "source": "Wikipedia: Cryptocurrency bubble (2017–2018); tarifas: estimaciones de diseño del juego (world.json)",
       "related": [
