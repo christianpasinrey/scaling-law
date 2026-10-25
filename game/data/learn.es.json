@@ -166,7 +166,7 @@
       "short": "Un kilovatio-hora es la energía que gasta algo de 1.000 W funcionando durante una hora.",
       "why": "Los vatios dicen cuánta potencia usa algo en un momento; los kilovatios-hora, cuánta energía ha gastado en total. La factura de la luz se paga por kWh. Una GPU a plena carga todo el día, toda la semana, se nota.",
       "deep": "Energía (kWh) = potencia (W) × horas / 1.000. Una 1080 Ti a 250 W durante 24 h = 6 kWh; a 0,35 $/kWh, unos 2,10 $ al día.",
-      "game": "En el juego la electricidad cuesta 0,35 $/kWh (aprox.): la media residencial de EE. UU. en 2017 rondaba 0,13 $/kWh, pero un garaje con GPUs encendidas día y noche dispara el consumo y, con tarifas por tramos como las de California, paga el kWh de los tramos altos, de unos 0,30–0,40 $. Se paga en la liquidación semanal.",
+      "game": "En el juego la electricidad cuesta 0,35 $/kWh, y es una estimación de diseño, no un dato. La media residencial de EE. UU. en 2017 rondaba 0,13 $/kWh (EIA). Con las tarifas por tramos de California, el kWh de consumo alto ya superaba los 0,30 $ hacia 2012 (PG&E ante la CPUC). El juego usa 0,35 para que un garaje que solo gasta, sin ingresos, se arruine en menos de un año. Se paga en la liquidación semanal.",
       "link": "https://en.wikipedia.org/wiki/Kilowatt-hour",
       "source": "Wikipedia: Kilowatt-hour; EIA (precio residencial medio de EE. UU., 2017)",
       "related": [
