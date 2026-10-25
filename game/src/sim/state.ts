@@ -46,6 +46,8 @@ export function newGame(d: GameData, seed: number, labName: string): GameState {
     ledger: [],
     pulso: [],
     flags: {},
+    weekRentUsd: 0,
+    negativeWeeks: 0,
     outcome: null,
   };
 }

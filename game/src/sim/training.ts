@@ -1,6 +1,6 @@
 import { appendPulso } from './pulsoLog';
 import type { Rng } from './rng';
-import type { GameData, GameState, PulsoItem, TrainingJob } from './types';
+import type { GameData, GameState, Grant, PulsoItem, TrainingJob } from './types';
 
 /**
  * Didactic loss curve: start * (1 - f)^exponent + floor (parameters in data).
@@ -32,6 +32,7 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   let checkpoint = job.checkpointP100h;
   let rolledBack = false;
   let pulso = s.pulso;
+  let grants = s.grants;
 
   // Breaker out: the garage has no power, anything since the last checkpoint is lost.
   if (s.power.breakerTripped) {
@@ -61,8 +62,15 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
     const contractActive = s.contracts.some((c) => c.status === 'active');
     const factor = contractActive ? d.products.training.researchContractFactor.value : 1;
     const own = trainGpus.reduce((sum, g) => sum + p100eqOf(d, g.model) * g.perf, 0) * factor;
-    const grants = s.grants.reduce((sum, g) => sum + (g.status === 'active' ? g.p100eq : 0), 0);
-    done = Math.min(job.workP100h, done + own + grants);
+    // A grant contributes only while it has cloud hours left; each contributing hour burns one.
+    const live = (g: Grant) => g.status === 'active' && g.hoursLeft > 0;
+    const grantP100 = s.grants.reduce((sum, g) => sum + (live(g) ? g.p100eq : 0), 0);
+    grants = s.grants.map((g) => {
+      if (!live(g)) return g;
+      const hoursLeft = g.hoursLeft - 1;
+      return { ...g, hoursLeft, status: hoursLeft > 0 ? g.status : ('expired' as const) };
+    });
+    done = Math.min(job.workP100h, done + own + grantP100);
   }
 
   let lossCurve = job.lossCurve;
@@ -76,19 +84,20 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   let next: GameState = {
     ...s,
     pulso,
+    grants,
     jobs: s.jobs.map((j) => (j.id === job.id ? updated : j)),
   };
 
-  if (finished) next = complete(next, job.id);
+  if (finished) next = complete(next, d, job.id);
   return next;
 }
 
 /** Rewards and unlocks when a job finishes. */
-function complete(s: GameState, id: TrainingJob['id']): GameState {
+function complete(s: GameState, d: GameData, id: TrainingJob['id']): GameState {
   if (id === 'replicate_paper') {
     return {
       ...s,
-      reputation: s.reputation + 15,
+      reputation: s.reputation + d.products.economy.reputation.replicatePaper.value,
       pulso: appendPulso(s, {
         id: 'praise:replicate_paper',
         hour: s.hour,
@@ -100,5 +109,5 @@ function complete(s: GameState, id: TrainingJob['id']): GameState {
       product: { ...s.product, launched: true },
     };
   }
-  return { ...s, reputation: s.reputation + 10, flags: { ...s.flags, model_v2: true } };
+  return { ...s, reputation: s.reputation + d.products.economy.reputation.translationV2.value, flags: { ...s.flags, model_v2: true } };
 }

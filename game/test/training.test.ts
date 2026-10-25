@@ -92,8 +92,8 @@ describe('progress', () => {
     const offered = { ...active, status: 'offered' as const };
     expect(job(stepTraining({ ...s0, contracts: [offered] }, dNoFail, fakeRng(0.99))).doneP100h).toBe(1);
     const grants = [
-      { id: 'g1', p100eq: 2, weeksLeft: 3, status: 'active' as const },
-      { id: 'g2', p100eq: 5, weeksLeft: 3, status: 'offered' as const },
+      { id: 'g1', p100eq: 2, hoursLeft: 10, weeksLeft: 3, status: 'active' as const },
+      { id: 'g2', p100eq: 5, hoursLeft: 10, weeksLeft: 3, status: 'offered' as const },
     ];
     expect(job(stepTraining({ ...s0, grants }, dNoFail, fakeRng(0.99))).doneP100h).toBe(3);
   });

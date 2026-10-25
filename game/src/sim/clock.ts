@@ -1,5 +1,5 @@
 import { restoreRng } from './rng';
-import { settleWeek } from './economy';
+import { settleWeek, stepRental } from './economy';
 import { emitPulso } from './pulso';
 import { stepPower } from './power';
 import { stepProgression } from './progression';
@@ -27,6 +27,7 @@ export function advance(s: GameState, d: GameData, hours: number): GameState {
   for (let i = 0; i < n; i++) {
     cur = stepProgression(cur, d);
     cur = stepPower(cur, d, rng);
+    cur = stepRental(cur, d);
     cur = stepTraining(cur, d, rng);
     cur = stepServing(cur, d, rng);
     cur = emitPulso(cur, d, rng);

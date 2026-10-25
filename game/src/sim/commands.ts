@@ -1,4 +1,5 @@
 import { dateOf } from './clock';
+import { nextId } from './ids';
 import type { Alloc, GameData, GameState, PulsoItem, RigModel } from './types';
 
 export type Command =
@@ -14,16 +15,6 @@ export type Command =
   | { t: 'decline_round' };
 
 const ALLOCS: readonly Alloc[] = ['train', 'serve', 'rent', 'idle'];
-
-/** Next `${prefix}-N` id: one past the highest existing numeric suffix. */
-function nextId(prefix: string, ids: string[]): string {
-  let max = 0;
-  for (const id of ids) {
-    const n = Number(id.slice(prefix.length + 1));
-    if (id.startsWith(`${prefix}-`) && Number.isInteger(n) && n > max) max = n;
-  }
-  return `${prefix}-${max + 1}`;
-}
 
 /** Invalid command: same state plus a 'warning' Pulso item (repeats of the same warning bump `count`). */
 function warn(s: GameState, code: string, text: string): GameState {
@@ -99,10 +90,18 @@ export function applyCommand(s: GameState, d: GameData, c: Command): GameState {
       }
       return { ...s, product: { ...s.product, priceUsdPerMChars: c.usdPerMChars } };
     }
-    case 'accept_contract':
-      return warn(s, 'unknown_contract', `Contrato desconocido: ${c.contractId}.`);
-    case 'apply_grant':
-      return warn(s, 'unknown_grant', `Beca desconocida: ${c.grantId}.`);
+    case 'accept_contract': {
+      const k = s.contracts.find((x) => x.id === c.contractId);
+      if (!k) return warn(s, 'unknown_contract', `Contrato desconocido: ${c.contractId}.`);
+      if (k.status !== 'offered') return warn(s, 'contract_not_offered', `El contrato ${k.id} ya no está disponible.`);
+      return { ...s, contracts: s.contracts.map((x) => (x.id === k.id ? { ...x, status: 'active' as const } : x)) };
+    }
+    case 'apply_grant': {
+      const g = s.grants.find((x) => x.id === c.grantId);
+      if (!g) return warn(s, 'unknown_grant', `Beca desconocida: ${c.grantId}.`);
+      if (g.status !== 'offered') return warn(s, 'grant_not_offered', `La subvención ${g.id} ya no está disponible.`);
+      return { ...s, grants: s.grants.map((x) => (x.id === g.id ? { ...x, status: 'active' as const } : x)) };
+    }
     case 'reset_breaker':
       // Clears the flag only: if the draw is still over the limit, the next stepPower trips it again.
       if (s.power.breakerTripped) return { ...s, power: { ...s.power, breakerTripped: false } };

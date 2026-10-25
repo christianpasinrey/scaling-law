@@ -10,7 +10,7 @@
     "replicate_paper": {
       "workP100h": {
         "value": 96,
-        "source": "https://arxiv.org/abs/1706.03762 §5.2: base model, 8 P100 x 12 h = 96 P100-hours",
+        "source": "https://arxiv.org/abs/1706.03762 \u00c2\u00a75.2: base model, 8 P100 x 12 h = 96 P100-hours",
         "approx": false
       }
     },
@@ -47,6 +47,84 @@
       "floor": {
         "value": 1.8,
         "source": "Didactic curve shape, not paper data: loss at 100 % progress",
+        "approx": true
+      }
+    }
+  },
+  "economy": {
+    "consulting": {
+      "everyWeeks": {
+        "value": 4,
+        "source": "Game-design choice: consulting offers arrive every 4 weeks",
+        "approx": true
+      },
+      "maxOffers": {
+        "value": 2,
+        "source": "Game-design choice: 0 to 2 offers per round",
+        "approx": true
+      },
+      "usdMin": {
+        "value": 3000,
+        "source": "Game-design choice: smallest consulting gig for a 2017 AI lab",
+        "approx": true
+      },
+      "usdMax": {
+        "value": 12000,
+        "source": "Game-design choice: largest consulting gig for a 2017 AI lab",
+        "approx": true
+      },
+      "usdStep": {
+        "value": 100,
+        "source": "Game-design choice: gig values are rounded to this step",
+        "approx": true
+      },
+      "weeksMin": {
+        "value": 2,
+        "source": "Game-design choice: shortest gig, in weeks",
+        "approx": true
+      },
+      "weeksMax": {
+        "value": 6,
+        "source": "Game-design choice: longest gig, in weeks",
+        "approx": true
+      }
+    },
+    "grant": {
+      "minReputation": {
+        "value": 15,
+        "source": "Game-design choice: reputation needed before a compute grant is offered",
+        "approx": true
+      },
+      "p100eq": {
+        "value": 2.5,
+        "source": "Game-design choice: 500 cloud V100 hours modelled as 2.5 P100-equivalents of virtual GPU",
+        "approx": true
+      },
+      "hours": {
+        "value": 500,
+        "source": "Game-design choice: cloud V100 hours granted",
+        "approx": true
+      },
+      "weeks": {
+        "value": 8,
+        "source": "Game-design choice: weeks the grant stays open once accepted",
+        "approx": true
+      }
+    },
+    "bankruptcyNegativeWeeks": {
+      "value": 4,
+      "source": "Game-design choice: consecutive weekly settlements ending with negative cash before bankruptcy",
+      "approx": true
+    },
+    "reputation": {
+      "replicatePaper": {
+        "value": 15,
+        "source": "Game-design choice: reputation reward for replicating the paper",
+        "approx": true
+      },
+      "translationV2": {
+        "value": 10,
+        "source": "Game-design choice: reputation reward for the translation v2 model",
         "approx": true
       }
     }

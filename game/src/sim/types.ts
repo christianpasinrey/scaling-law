@@ -85,8 +85,34 @@ export interface JobData {
   workP100h: Sourced<number>;
 }
 
+export interface EconomyData {
+  consulting: {
+    /** An offering round happens when the week number is a multiple of this. */
+    everyWeeks: Sourced<number>;
+    maxOffers: Sourced<number>;
+    usdMin: Sourced<number>;
+    usdMax: Sourced<number>;
+    usdStep: Sourced<number>;
+    weeksMin: Sourced<number>;
+    weeksMax: Sourced<number>;
+  };
+  grant: {
+    minReputation: Sourced<number>;
+    p100eq: Sourced<number>;
+    hours: Sourced<number>;
+    weeks: Sourced<number>;
+  };
+  /** Consecutive weekly settlements with negative cash that end the game. */
+  bankruptcyNegativeWeeks: Sourced<number>;
+  reputation: {
+    replicatePaper: Sourced<number>;
+    translationV2: Sourced<number>;
+  };
+}
+
 export interface ProductsData {
   translation: TranslationProductData;
+  economy: EconomyData;
   jobs: {
     replicate_paper: JobData;
     translation_v2: JobData;
@@ -166,6 +192,8 @@ export interface Contract {
 export interface Grant {
   id: string;
   p100eq: number;
+  /** Cloud hours still available; the grant only contributes while this is above 0. */
+  hoursLeft: number;
   weeksLeft: number;
   status: 'offered' | 'active' | 'expired';
 }
@@ -207,6 +235,10 @@ export interface GameState {
   ledger: LedgerWeek[];
   pulso: PulsoItem[];
   flags: Record<string, boolean>;
+  /** GPU rental income accrued this week; settled into the ledger. */
+  weekRentUsd: number;
+  /** Consecutive weekly settlements that ended with negative cash. */
+  negativeWeeks: number;
   outcome: null | 'seed_round' | 'bankrupt';
   round?: { status: 'offered' | 'declined'; offeredHour: number };
 }

@@ -1,4 +1,4 @@
-import type { GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
+import type { EconomyData, GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
 
 export class DataError extends Error {
   constructor(message: string) {
@@ -114,6 +114,32 @@ function world(v: unknown, path: string): WorldData {
   };
 }
 
+function economy(v: unknown, path: string): EconomyData {
+  const o = obj(v, path);
+  const c = obj(o.consulting, `${path}.consulting`);
+  const g = obj(o.grant, `${path}.grant`);
+  const r = obj(o.reputation, `${path}.reputation`);
+  const cs = (k: string) => sourced(c[k], `${path}.consulting.${k}`);
+  const gs = (k: string) => sourced(g[k], `${path}.grant.${k}`);
+  return {
+    consulting: {
+      everyWeeks: cs('everyWeeks'),
+      maxOffers: cs('maxOffers'),
+      usdMin: cs('usdMin'),
+      usdMax: cs('usdMax'),
+      usdStep: cs('usdStep'),
+      weeksMin: cs('weeksMin'),
+      weeksMax: cs('weeksMax'),
+    },
+    grant: { minReputation: gs('minReputation'), p100eq: gs('p100eq'), hours: gs('hours'), weeks: gs('weeks') },
+    bankruptcyNegativeWeeks: sourced(o.bankruptcyNegativeWeeks, `${path}.bankruptcyNegativeWeeks`),
+    reputation: {
+      replicatePaper: sourced(r.replicatePaper, `${path}.reputation.replicatePaper`),
+      translationV2: sourced(r.translationV2, `${path}.reputation.translationV2`),
+    },
+  };
+}
+
 function products(v: unknown, path: string): ProductsData {
   const o = obj(v, path);
   const tr = obj(o.translation, `${path}.translation`);
@@ -133,6 +159,7 @@ function products(v: unknown, path: string): ProductsData {
   };
   return {
     training,
+    economy: economy(o.economy, `${path}.economy`),
     translation: {
       defaultPriceUsdPerMChars: sourced(tr.defaultPriceUsdPerMChars, `${path}.translation.defaultPriceUsdPerMChars`),
     },
