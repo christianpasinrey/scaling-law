@@ -1,4 +1,6 @@
 import {
+  Box3,
+  Box3Helper,
   BoxGeometry,
   CanvasTexture,
   CatmullRomCurve3,
@@ -190,6 +192,9 @@ export class GarageView {
   private data: GameData | null = null;
   private mode: FlowMode = 'normal';
   private disposed = false;
+  private highlightId: string | null = null;
+  private highlightRoot: Object3D | null = null;
+  private highlightBox: Box3Helper | null = null;
   private readonly flowOpts: { reducedMotion: boolean };
   private readonly offFrame: () => void;
 
@@ -218,9 +223,17 @@ export class GarageView {
     this.sync();
   }
 
+  /** Outlines one GPU (selection from the UI or a Pulso focus); null clears it. Static, so reduced motion is respected. */
+  highlight(gpuId: string | null): void {
+    this.highlightId = gpuId;
+    this.refreshHighlight();
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.highlightId = null;
+    this.refreshHighlight();
     this.offFrame();
     this.ctx.canvas.removeEventListener('pointerdown', this.onPointerDown);
     this.ctx.canvas.removeEventListener('pointerup', this.onPointerUp);
@@ -272,6 +285,29 @@ export class GarageView {
     for (const id of [...this.gpus.keys()]) if (!s.gpus.some((g) => g.id === id)) this.removeGpu(id);
 
     this.applyState(s, d);
+    this.refreshHighlight();
+  }
+
+  /** Rebuilds the outline only when the highlighted GPU's mounted object changed (it may load later). */
+  private refreshHighlight(): void {
+    const root = this.highlightId ? (this.gpus.get(this.highlightId)?.root ?? null) : null;
+    if (root === this.highlightRoot) return;
+    this.highlightRoot = root;
+    if (this.highlightBox) {
+      this.world.remove(this.highlightBox);
+      this.highlightBox.geometry.dispose();
+      (this.highlightBox.material as Material).dispose();
+      this.highlightBox = null;
+    }
+    if (!root) return;
+    root.updateWorldMatrix(true, true);
+    const box = new Box3().setFromObject(root).expandByScalar(0.012);
+    const helper = new Box3Helper(box, new Color(0x5be7c4));
+    (helper.material as Material).depthTest = false;
+    (helper.material as Material).toneMapped = false;
+    helper.renderOrder = 10;
+    this.highlightBox = helper;
+    this.world.add(helper);
   }
 
   /** Returns the loaded GLB or starts loading it (sync runs again when it arrives). */

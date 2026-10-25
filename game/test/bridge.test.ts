@@ -60,6 +60,15 @@ describe('sim host clock', () => {
     expect(m).not.toBeNull();
     expect(m?.state.product.priceUsdPerMChars).toBe(25);
   });
+  it('a speed change between ticks keeps the fractional hour already accumulated', () => {
+    const h = hostWith(1);
+    // 0.6 h at x1, then 0.6 h more at x2 (0.3 h of real time): 1.2 h ⇒ exactly one hour advanced.
+    expect(h.handle({ t: 'tick', realMs: 0.6 * msPerHour })).toBeNull();
+    h.handle({ t: 'speed', x: 2 });
+    expect(hourOf(h.handle({ t: 'tick', realMs: 0.3 * msPerHour }))).toBe(1);
+    // The 0.2 h remainder is still there: 0.8 h more at x2 (0.4 h real) reaches the second hour.
+    expect(hourOf(h.handle({ t: 'tick', realMs: 0.4 * msPerHour }))).toBe(2);
+  });
   it('init resets the accumulator', () => {
     const h = hostWith(1);
     h.handle({ t: 'tick', realMs: 200 });
@@ -85,11 +94,13 @@ describe('SimBridge', () => {
     const b = new SimBridge(w, {
       now: () => now,
       isHidden: () => hidden,
-      onVisibilityChange: (cb) => { visCb = cb; },
+      onVisibilityChange: (cb) => { visCb = cb; return () => { visCb = null; }; },
       schedule: (cb) => { loop = cb; return () => { loop = null; }; },
     });
     return {
       w, b,
+      hasVisibilityListener: () => visCb !== null,
+      hasLoop: () => loop !== null,
       frame: (ms: number) => { now += ms; loop?.(); },
       hide: (v: boolean) => { hidden = v; visCb?.(); },
     };
@@ -116,11 +127,62 @@ describe('SimBridge', () => {
     const got: GameState[] = [];
     t.b.onState((s) => got.push(s));
     t.b.start(fresh());
+    t.b.setSpeed(1);
     t.b.send({ t: 'set_price', usdPerMChars: 25 });
     t.frame(10);
     const kinds = t.w.sent.map((m) => m.t);
     expect(kinds.indexOf('cmd')).toBeLessThan(kinds.lastIndexOf('tick'));
     t.w.onmessage?.({ data: { t: 'state', state: fresh() } });
     expect(got).toHaveLength(1);
+  });
+  it('posts no ticks while paused, and the first tick after resuming does not include the pause', () => {
+    const t = setup();
+    t.b.start(fresh());
+    t.frame(16);
+    t.frame(500);
+    expect(t.w.sent.filter((m) => m.t === 'tick')).toHaveLength(0);
+    t.b.setSpeed(1);
+    t.frame(20);
+    expect(t.w.sent.at(-1)).toEqual({ t: 'tick', realMs: 20 });
+  });
+  it('posts no ticks while hidden', () => {
+    const t = setup();
+    t.b.start(fresh());
+    t.b.setSpeed(1);
+    t.hide(true);
+    const before = t.w.sent.length;
+    t.frame(16);
+    t.frame(16);
+    expect(t.w.sent.slice(before).some((m) => m.t === 'tick')).toBe(false);
+    t.hide(false);
+    t.frame(16);
+    expect(t.w.sent.at(-1)).toEqual({ t: 'tick', realMs: 16 });
+  });
+  it('setSpeed while hidden is remembered and sent when visible again', () => {
+    const t = setup();
+    t.b.start(fresh());
+    t.b.setSpeed(1);
+    t.hide(true);
+    const before = t.w.sent.length;
+    t.b.setSpeed(4);
+    expect(t.w.sent.slice(before)).toEqual([]);
+    t.hide(false);
+    expect(t.w.sent.at(-1)).toEqual({ t: 'speed', x: 4 });
+  });
+  it('stop() cancels the loop, unsubscribes visibility and detaches the worker', () => {
+    const t = setup();
+    const got: GameState[] = [];
+    t.b.onState((s) => got.push(s));
+    t.b.start(fresh());
+    t.b.setSpeed(1);
+    t.b.stop();
+    expect(t.hasLoop()).toBe(false);
+    expect(t.hasVisibilityListener()).toBe(false);
+    expect(t.w.onmessage).toBeNull();
+    const before = t.w.sent.length;
+    t.frame(16);
+    t.hide(true);
+    expect(t.w.sent.length).toBe(before);
+    expect(got).toHaveLength(0);
   });
 });

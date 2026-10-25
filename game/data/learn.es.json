@@ -1,0 +1,265 @@
+{
+  "cards": {
+    "gpu": {
+      "title": "GPU",
+      "short": "Una GPU es un procesador con miles de núcleos sencillos que hacen muchas multiplicaciones a la vez.",
+      "why": "Entrenar o usar una red neuronal consiste sobre todo en multiplicar matrices enormes: millones de multiplicaciones y sumas que no dependen unas de otras. Las GPU nacieron para dibujar gráficos, que también son cálculos independientes por píxel, así que hacen este trabajo muchísimo más rápido que una CPU, que tiene pocos núcleos muy listos en vez de miles de núcleos sencillos.",
+      "deep": "Una capa densa calcula y = W·x + b: cada salida es una suma de productos que puede hacerse en paralelo. La GTX 1080 Ti (arquitectura Pascal, chip GP102) tiene 3.584 núcleos CUDA y unos 11,3 TFLOPS en FP32 (billones de operaciones de coma flotante por segundo).",
+      "link": "https://en.wikipedia.org/wiki/Graphics_processing_unit",
+      "source": "Wikipedia: Graphics processing unit; GeForce 10 series (especificaciones de la GTX 1080 Ti)",
+      "related": ["vram", "p100eq", "gpu_gtx1080ti"]
+    },
+    "gpu_gtx1080ti": {
+      "title": "NVIDIA GeForce GTX 1080 Ti",
+      "short": "La tarjeta gaming más potente de NVIDIA en 2017, y una de las favoritas de los laboratorios pequeños para deep learning.",
+      "why": "Salió el 10 de marzo de 2017 a 699 $. Con 11 GB de memoria y mucha potencia de cálculo por dólar, permitía entrenar en casa modelos que poco antes exigían tarjetas profesionales mucho más caras. No tiene Tensor Cores: hace las cuentas con sus núcleos CUDA normales.",
+      "deep": "Pascal GP102 · 3.584 núcleos CUDA · 11 GB GDDR5X · 250 W de consumo de diseño · ~11,3 TFLOPS FP32.",
+      "game": "En el juego rinde 1,0 P100-equivalentes: una estimación de diseño para que el paper tarde unos 4 días con una sola tarjeta.",
+      "link": "https://en.wikipedia.org/wiki/GeForce_10_series",
+      "source": "Wikipedia: GeForce 10 series; NVIDIA (especificaciones de la GTX 1080 Ti). P100-equivalentes: estimación de diseño del juego",
+      "related": ["gpu", "p100eq", "vram"]
+    },
+    "gpu_titan_v": {
+      "title": "NVIDIA Titan V",
+      "short": "La Titan V (diciembre de 2017) llevó a un PC los Tensor Cores: unidades especializadas en multiplicar matrices.",
+      "why": "Un Tensor Core multiplica pequeños bloques de matrices en un solo paso, en precisión mixta (multiplica en FP16 y acumula en FP32). Para redes neuronales eso es mucho más rápido que los núcleos normales, si el software lo aprovecha. Costaba 2.999 $, más de cuatro veces una 1080 Ti.",
+      "deep": "Volta GV100 · 5.120 núcleos CUDA · 640 Tensor Cores · 12 GB HBM2 · 250 W · NVIDIA anunció hasta 110 TFLOPS «de deep learning» con los Tensor Cores (cifra de pico; en entrenamiento real se obtiene bastante menos).",
+      "game": "En el juego rinde 2,5 P100-equivalentes: estimación de diseño, no una medida.",
+      "link": "https://en.wikipedia.org/wiki/Volta_(microarchitecture)",
+      "source": "Wikipedia: Volta (microarchitecture); NVIDIA (anuncio de la Titan V, 7 dic 2017). P100-equivalentes: estimación de diseño del juego",
+      "related": ["gpu", "p100eq"]
+    },
+    "open_frame": {
+      "title": "Bastidor abierto",
+      "short": "Un bastidor abierto, como los de minería, sujeta hasta 6 GPUs al aire conectadas con cables riser.",
+      "why": "Una torre normal solo tiene sitio para una o dos tarjetas grandes, y juntas se calientan entre ellas. En un bastidor abierto las tarjetas están separadas y al aire, así que se enfrían mejor. A cambio necesitan más fuentes de alimentación, y el circuito de casa sigue siendo el mismo: más tarjetas no significa más vatios disponibles.",
+      "deep": "Una ranura PCIe x16 (o el riser que la sustituye) entrega como máximo 75 W; el resto del consumo de la tarjeta llega por sus propios cables PCIe desde la fuente.",
+      "game": "En el juego aparece el 1 de enero de 2018 por ritmo de partida (los bastidores de minería ya existían antes), cuesta unos 350 $ (estimación) y cada tarjeta vecina suma 1,5 °C, frente a 6 °C en la torre cerrada.",
+      "link": "https://en.wikipedia.org/wiki/PCI_Express#Power",
+      "source": "Especificación PCI Express CEM (75 W por ranura x16); precio y temperaturas: estimaciones de diseño del juego",
+      "related": ["throttling", "breaker"]
+    },
+    "vram": {
+      "title": "VRAM (memoria de la GPU)",
+      "short": "La VRAM es la memoria propia de la tarjeta: todo lo que la GPU calcula tiene que caber ahí.",
+      "why": "Para entrenar hay que tener en la memoria de la GPU los pesos del modelo, sus gradientes, el estado del optimizador y los resultados intermedios de cada capa (activaciones). Si no cabe, hay que usar lotes más pequeños, menos precisión o repartir el modelo entre varias GPUs.",
+      "deep": "Con el optimizador Adam en FP32: 4 bytes de peso + 4 de gradiente + 8 de los dos momentos de Adam = 16 bytes por parámetro, más las activaciones. El modelo base del paper tiene unos 65 millones de parámetros: ≈ 1 GB más activaciones, así que cabe en los 11 GB de una 1080 Ti.",
+      "game": "En el juego la VRAM todavía no limita nada: el modelo de 2017 cabe de sobra en cualquiera de tus tarjetas.",
+      "link": "https://arxiv.org/abs/1910.02054",
+      "source": "arXiv 1706.03762 (tabla 3: 65 M de parámetros del modelo base); Rajbhandari et al., ZeRO, arXiv 1910.02054 (memoria por parámetro con Adam)",
+      "related": ["gpu", "data_parallel"]
+    },
+    "p100eq": {
+      "title": "P100-equivalente",
+      "short": "Unidad del juego: cuánto trabajo hace una GPU en una hora comparada con una NVIDIA Tesla P100, la tarjeta que usó el paper.",
+      "why": "El paper «Attention Is All You Need» entrenó su modelo base en 8 Tesla P100 durante 12 horas. Para comparar tu hardware con eso, el juego mide el trabajo en «P100-horas» y la potencia de cada tarjeta en P100-equivalentes. En la realidad la velocidad depende del modelo, la precisión numérica y el software, así que un solo número es una simplificación.",
+      "deep": "Trabajo del modelo base = 8 GPUs × 12 h = 96 P100-horas (100.000 pasos de entrenamiento). Con una GPU de 1,0 P100-eq: 96 h ≈ 4 días.",
+      "game": "Las equivalencias (1080 Ti = 1,0; Titan V = 2,5) son estimaciones de diseño, no medidas.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §5.2 (8 × P100, 12 h, 100.000 pasos); equivalencias: estimación de diseño del juego",
+      "related": ["training", "gpu"]
+    },
+    "training": {
+      "title": "Entrenamiento",
+      "short": "Entrenar es ajustar millones de números (los pesos) para que el modelo se equivoque cada vez menos.",
+      "why": "Se le enseñan al modelo ejemplos, aquí pares de frases en dos idiomas. Intenta traducir, se compara su respuesta con la traducción real y se calcula cuánto se ha equivocado (la loss). La retropropagación calcula hacia dónde mover cada peso para equivocarse un poco menos, y el optimizador lo mueve. Esto se repite cientos de miles de veces.",
+      "deep": "Descenso de gradiente: w ← w − η·∂L/∂w. El paper usa el optimizador Adam (β₁ = 0,9, β₂ = 0,98, ε = 10⁻⁹) con un ritmo de aprendizaje que sube durante 4.000 pasos de calentamiento y luego baja.",
+      "game": "En el juego el progreso se mide en P100-horas; la curva de loss que ves es didáctica, no los datos del paper.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §5 (datos, hardware, optimizador)",
+      "related": ["loss", "checkpoint", "data_parallel", "p100eq"]
+    },
+    "loss": {
+      "title": "Loss (función de pérdida)",
+      "short": "La loss mide cuánto se equivoca el modelo; entrenar es hacerla bajar.",
+      "why": "En traducción, la loss mide lo «sorprendido» que queda el modelo con la palabra correcta: si le daba mucha probabilidad, la loss es baja; si le daba poca, alta. Al principio el modelo adivina y la loss es alta; baja rápido en las primeras horas y luego cada vez más despacio.",
+      "deep": "Entropía cruzada: L = −(1/N)·Σ log p(token correcto). Si el modelo diera probabilidad 1 a cada token correcto, L = 0. El paper además usa «label smoothing» (ε = 0,1), que impide que el modelo esté nunca seguro del todo.",
+      "game": "La curva del juego tiene la forma típica, pero sus números son didácticos: no son los del paper.",
+      "link": "https://en.wikipedia.org/wiki/Cross-entropy",
+      "source": "arXiv 1706.03762 §5.4 (label smoothing); Wikipedia: Cross-entropy. Curva del juego: forma didáctica (products.json, training.loss)",
+      "related": ["training", "softmax"]
+    },
+    "checkpoint": {
+      "title": "Checkpoint (punto de control)",
+      "short": "Un checkpoint es una copia guardada del modelo a mitad de entrenamiento.",
+      "why": "Si una GPU falla o se va la luz, no hay que empezar de cero: se vuelve al último checkpoint y solo se pierde lo hecho desde entonces. Guardar cuesta tiempo y disco, así que no se hace en cada paso: hay que elegir cada cuánto.",
+      "deep": "Fórmula de Young (1974): el intervalo óptimo entre checkpoints es aproximadamente √(2 × coste de guardar × tiempo medio entre fallos). Cuantos más fallos, más a menudo conviene guardar.",
+      "game": "En el juego se guarda un checkpoint cada 4 horas de juego (decisión de diseño) y la marca blanca de la barra de progreso indica hasta dónde está a salvo.",
+      "link": "https://doi.org/10.1145/361147.361115",
+      "source": "J. W. Young, «A first order approximation to the optimum checkpoint interval», Communications of the ACM 17(9), 1974; intervalo del juego: decisión de diseño",
+      "related": ["training", "breaker"]
+    },
+    "inference": {
+      "title": "Inferencia",
+      "short": "Inferencia es usar el modelo ya entrenado para responder: aquí, traducir el texto de un cliente.",
+      "why": "Al servir no se cambian los pesos: solo se hace la pasada hacia delante. El codificador lee la frase de origen una vez y el decodificador escribe la traducción token a token, cada uno mirando los anteriores. Cada petición es barata comparada con entrenar, pero no para nunca, y si llegan más peticiones de las que tus GPUs pueden atender se forma cola y la latencia sube.",
+      "deep": "El paper traduce con búsqueda en haz («beam search») de tamaño 4 y penalización de longitud α = 0,6: en vez de quedarse siempre con el token más probable, mantiene las 4 traducciones parciales más prometedoras.",
+      "game": "En el juego cada P100-equivalente sirve unos 40 millones de caracteres por hora (estimación de diseño).",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3 y §6.1 (decodificación); capacidad por GPU: estimación de diseño del juego",
+      "related": ["translation_api", "encoder", "decoder", "data_parallel"]
+    },
+    "throttling": {
+      "title": "Throttling térmico",
+      "short": "Cuando una GPU se calienta demasiado, baja su velocidad para protegerse.",
+      "why": "El chip vigila su temperatura: si se acerca al límite, reduce frecuencia y voltaje para calentar menos. Rinde menos, pero no se estropea. Si aun así sigue subiendo, se apaga. En una torre cerrada dos tarjetas a plena carga se calientan entre ellas; más aire y más separación ayudan.",
+      "deep": "La GTX 1080 Ti tiene un objetivo de temperatura de 84 °C por defecto (GPU Boost 3.0) y NVIDIA da 91 °C como temperatura máxima. En la realidad la bajada es gradual, a escalones de frecuencia.",
+      "game": "El juego lo simplifica en dos saltos: desde 84 °C la GPU rinde ×0,7 y desde 91 °C se apaga hasta enfriarse. Cada tarjeta vecina suma 6 °C en la torre y 1,5 °C en el bastidor abierto: en el bastidor, con 4 tarjetas a plena carga ya se pasa de 84 °C.",
+      "link": "https://en.wikipedia.org/wiki/Dynamic_frequency_scaling",
+      "source": "NVIDIA (especificaciones GTX 1080 Ti: 91 °C máx.; GPU Boost 3.0); Wikipedia: Dynamic frequency scaling; temperaturas del juego: estimaciones de diseño (world.json)",
+      "related": ["gpu", "open_frame"]
+    },
+    "breaker": {
+      "title": "Diferencial y magnetotérmico",
+      "short": "Si el circuito del garaje pide más corriente de la que aguanta, un interruptor corta la luz para que los cables no se quemen.",
+      "why": "Cada circuito de una casa tiene un límite. Un circuito típico de EE. UU. es de 15 A a 120 V, es decir 1.800 W; para cargas continuas (más de 3 horas) la norma eléctrica recomienda no pasar del 80 %, 1.440 W. Coloquialmente decimos «ha saltado el diferencial», pero lo que corta por sobrecarga es el magnetotérmico (en EE. UU., el «circuit breaker»); el diferencial propiamente dicho salta por fugas de corriente.",
+      "deep": "Potencia = tensión × corriente: 120 V × 15 A = 1.800 W; 80 % × 1.800 W = 1.440 W (NEC 210.20, cargas continuas). Un magnetotérmico real tolera picos breves y corta antes cuanto mayor es la sobrecarga.",
+      "game": "En el juego salta al instante por encima de 1.800 W. Mientras está saltado no funciona nada, el entrenamiento vuelve al último checkpoint y la velocidad máxima es ×1 hasta que lo rearmes (y bajes el consumo).",
+      "link": "https://en.wikipedia.org/wiki/Circuit_breaker",
+      "source": "docs/research/02-datacenter.md §1; Wikipedia: Circuit breaker; Residual-current device; NFPA 70 (NEC) 210.19/210.20",
+      "related": ["kwh", "checkpoint"]
+    },
+    "kwh": {
+      "title": "Kilovatio-hora (kWh)",
+      "short": "Un kilovatio-hora es la energía que gasta algo de 1.000 W funcionando durante una hora.",
+      "why": "Los vatios dicen cuánta potencia usa algo en un momento; los kilovatios-hora, cuánta energía ha gastado en total. La factura de la luz se paga por kWh. Una GPU a plena carga todo el día, toda la semana, se nota.",
+      "deep": "Energía (kWh) = potencia (W) × horas / 1.000. Una 1080 Ti a 250 W durante 24 h = 6 kWh; a 0,13 $/kWh, unos 0,78 $ al día.",
+      "game": "En el juego la electricidad cuesta 0,13 $/kWh (media residencial de EE. UU. en 2017, aprox.) y se paga en la liquidación semanal.",
+      "link": "https://en.wikipedia.org/wiki/Kilowatt-hour",
+      "source": "Wikipedia: Kilowatt-hour; EIA (precio residencial medio de EE. UU., 2017)",
+      "related": ["breaker", "gpu_rental"]
+    },
+    "gpu_rental": {
+      "title": "Alquiler de cómputo",
+      "short": "Alquilar tu GPU es dejar que otros usen su potencia de cálculo a cambio de dinero.",
+      "why": "En 2017 y principios de 2018 la minería de criptomonedas disparó la demanda de tarjetas gráficas, y alquilarlas daba dinero. Mientras está alquilada, la tarjeta no entrena ni sirve tu producto, y sigue gastando luz y calentándose.",
+      "deep": "Beneficio neto por día ≈ tarifa − 0,25 kW × 24 h × precio del kWh. Con 4 $/día: 4 − 0,78 ≈ 3,2 $ por tarjeta.",
+      "game": "Las tarifas son estimaciones de diseño: 4 $/día por 1080 Ti hasta el 31 de marzo de 2018, 1 $/día después.",
+      "link": "https://en.wikipedia.org/wiki/Cryptocurrency_bubble",
+      "source": "Wikipedia: Cryptocurrency bubble (2017–2018); tarifas: estimaciones de diseño del juego (world.json)",
+      "related": ["kwh"]
+    },
+    "consulting": {
+      "title": "Consultoría",
+      "short": "Hacer trabajos de IA para otras empresas trae dinero seguro, pero quita tiempo a tu propia investigación.",
+      "why": "Muchos laboratorios pequeños se financian así al principio: el cliente paga por un proyecto y el equipo dedica a él parte de su tiempo y de sus máquinas.",
+      "deep": "Ingreso por semana = importe del contrato / semanas de duración.",
+      "game": "En el juego un contrato activo reduce a la mitad la velocidad de tus entrenamientos y paga a plazos semanales. Importes y duraciones son estimaciones de diseño.",
+      "source": "Decisión de diseño del juego (products.json, economy.consulting)",
+      "related": ["training"]
+    },
+    "grant": {
+      "title": "Subvención de cómputo",
+      "short": "Algunas empresas de nube y universidades regalan horas de cómputo a investigadores.",
+      "why": "Es una forma de entrenar más sin comprar hardware. Por ejemplo, Google anunció en 2017 el programa TensorFlow Research Cloud, que daba acceso gratuito a TPUs a investigadores seleccionados. Suelen pedir algo de reputación y caducan.",
+      "deep": "Las horas de la beca se suman a tus GPUs mientras queden.",
+      "game": "En el juego la beca aparece con reputación 15: 500 horas de nube que cuentan como 2,5 P100-equivalentes extra durante 8 semanas (cifras de diseño).",
+      "link": "https://sites.research.google/trc/about/",
+      "source": "Google: TPU Research Cloud (antes TensorFlow Research Cloud, anunciado en mayo de 2017); cifras: decisión de diseño del juego",
+      "related": ["p100eq", "training"]
+    },
+    "funding_round": {
+      "title": "Ronda de financiación",
+      "short": "Una ronda es vender una parte de tu empresa a inversores a cambio de dinero para crecer.",
+      "why": "Una ronda «semilla» es la primera inversión seria: paga hardware y personas antes de que la empresa gane lo suficiente. El inversor no presta: compra acciones nuevas al precio que fija la valoración. La valoración «pre-money» es lo que vale la empresa antes de entrar el dinero; la «post-money», después.",
+      "deep": "Post-money = pre-money + inversión. Participación del inversor = inversión / post-money = 1,5 M$ / (8 M$ + 1,5 M$) ≈ 15,8 %.",
+      "game": "La ronda del juego (1,5 M$ con 8 M$ de valoración previa) es una estimación de diseño escalada a un laboratorio de garaje de 2017.",
+      "link": "https://en.wikipedia.org/wiki/Seed_money",
+      "source": "docs/research/03-economy.md §10.3 escalado a 2017 (estimación de diseño); Wikipedia: Seed money; Pre-money valuation",
+      "related": ["dilution"]
+    },
+    "dilution": {
+      "title": "Dilución",
+      "short": "Diluirse es que tu porcentaje de la empresa baje porque se crean acciones nuevas para un inversor.",
+      "why": "Tú no vendes tus acciones: la empresa emite acciones nuevas y se las da al inversor a cambio de su dinero. Tu trozo del pastel es más pequeño, pero el pastel tiene ahora más dinero dentro. La pregunta es si con ese dinero el pastel crecerá más de lo que has cedido.",
+      "deep": "Tu % después = tu % antes × pre-money / post-money. Con el 100 % y 8 M$ / 9,5 M$: te quedas con ≈ 84,2 %, que vale 8 M$, lo mismo que antes de la ronda.",
+      "game": "Cifras de la ronda: estimación de diseño del juego.",
+      "link": "https://en.wikipedia.org/wiki/Stock_dilution",
+      "source": "Wikipedia: Stock dilution; cifras: docs/research/03-economy.md §10.3 escalado a 2017 (estimación de diseño)",
+      "related": ["funding_round"]
+    },
+    "data_parallel": {
+      "title": "Paralelismo de datos",
+      "short": "Cada GPU tiene una copia completa del modelo y entrena con ejemplos distintos; al final de cada paso juntan lo aprendido.",
+      "why": "El modelo de 2017 cabe entero en una sola GPU, así que la forma natural de usar varias es repartir los datos: cada copia calcula sus gradientes con su parte del lote y luego se promedian (all-reduce), para que todas las copias sigan siendo idénticas. Si la comunicación es rápida, dos GPUs hacen casi el doble de trabajo. Repartir las capas de un modelo entre GPUs solo hace falta cuando ya no cabe en una.",
+      "deep": "Gradiente común = (1/K)·Σ gₖ sobre las K GPUs; el lote efectivo es K veces el de cada GPU. Con all-reduce en anillo, cada GPU envía y recibe ≈ 2(K−1)/K veces el tamaño del modelo por paso. El paper usó lotes de unos 25.000 tokens de origen y 25.000 de destino.",
+      "game": "En el juego el rendimiento de las GPUs se suma sin pérdidas: la comunicación entre tarjetas no cuesta nada (en un garaje, por PCIe, sí costaría algo).",
+      "link": "https://en.wikipedia.org/wiki/Data_parallelism",
+      "source": "arXiv 1706.03762 §5.1–5.2; Wikipedia: Data parallelism; Patarasuk y Yuan, «Bandwidth optimal all-reduce algorithms», 2009",
+      "related": ["training", "vram"]
+    },
+    "encoder": {
+      "title": "Codificador (encoder)",
+      "short": "El codificador lee la frase de origen entera y produce, para cada palabra, un vector que la describe en su contexto.",
+      "why": "Son 6 capas iguales apiladas. Cada capa tiene dos partes: una autoatención, donde cada palabra mira a todas las demás de la frase, y una pequeña red feed-forward que transforma cada palabra por separado. Cada parte va rodeada de una conexión residual y una normalización.",
+      "deep": "Cada subcapa calcula LayerNorm(x + Subcapa(x)). Todas las salidas tienen dimensión d_model = 512 en el modelo base.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3.1 y figura 1",
+      "related": ["attention", "feed_forward", "layer_norm", "decoder"]
+    },
+    "decoder": {
+      "title": "Decodificador (decoder)",
+      "short": "El decodificador escribe la traducción token a token, mirando lo que ya ha escrito y lo que entendió el codificador.",
+      "why": "También son 6 capas, con tres partes cada una: autoatención enmascarada (solo puede mirar los tokens anteriores, porque los siguientes aún no existen), atención sobre la salida del codificador (para consultar la frase de origen) y una red feed-forward. Al servir, se ejecuta una vez por cada token de la traducción.",
+      "deep": "La máscara pone a −∞ las posiciones futuras antes del softmax, de modo que su peso de atención sea 0.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3.1, §3.2.3 y figura 1",
+      "related": ["attention", "feed_forward", "layer_norm", "softmax", "encoder"]
+    },
+    "attention": {
+      "title": "Atención",
+      "short": "La atención deja que cada palabra mire a todas las demás y decida cuáles le importan para entenderse.",
+      "why": "Para cada palabra se calculan tres vectores: una pregunta (query), una etiqueta (key) y un contenido (value). Se compara la pregunta de una palabra con las etiquetas de todas; las más parecidas reciben más peso, y la palabra se queda con una mezcla de sus contenidos. En «el banco del parque», «banco» puede fijarse en «parque» para entender que es un asiento. El modelo base hace 8 atenciones en paralelo («cabezas»), cada una puede fijarse en cosas distintas.",
+      "deep": "Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k)·V, con 8 cabezas de d_k = 64 (8 × 64 = d_model = 512). Dividir por √d_k evita que los productos crezcan tanto que el softmax se sature.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3.2",
+      "related": ["encoder", "decoder", "softmax"]
+    },
+    "feed_forward": {
+      "title": "Red feed-forward",
+      "short": "Después de la atención, cada palabra pasa por una pequeña red propia que transforma su vector.",
+      "why": "La atención mezcla información entre palabras; la feed-forward procesa cada palabra por separado, con la misma red para todas las posiciones. Es donde está la mayoría de los parámetros de cada capa.",
+      "deep": "FFN(x) = max(0, x·W₁ + b₁)·W₂ + b₂: de 512 a 2.048 dimensiones, una ReLU, y de vuelta a 512.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3.3",
+      "related": ["encoder", "decoder", "layer_norm"]
+    },
+    "layer_norm": {
+      "title": "Normalización (Layer Norm)",
+      "short": "La normalización reajusta los números de cada vector para que no crezcan ni encojan sin control de capa en capa.",
+      "why": "Cada subcapa del Transformer suma su resultado a su entrada (conexión residual) y luego normaliza: resta la media del vector y divide por su desviación. Así las señales mantienen una escala estable y el entrenamiento de muchas capas es más fácil.",
+      "deep": "LN(x) = γ·(x − μ)/σ + β, con μ y σ calculadas sobre las 512 componentes de cada vector y γ, β aprendidos. El paper normaliza después de sumar (post-LN); muchos modelos posteriores lo hacen antes (pre-LN).",
+      "link": "https://arxiv.org/abs/1607.06450",
+      "source": "Ba, Kiros y Hinton, «Layer Normalization», arXiv 1607.06450; arXiv 1706.03762 §3.1",
+      "related": ["encoder", "decoder"]
+    },
+    "embedding": {
+      "title": "Embedding",
+      "short": "Un embedding convierte cada token (un trozo de palabra) en una lista de números que el modelo puede procesar.",
+      "why": "El modelo solo entiende números. Cada token del vocabulario tiene su vector de 512 números, que se aprende al entrenar: tokens que se usan de forma parecida acaban con vectores parecidos. Como la atención por sí sola no sabe en qué orden van las palabras, se le suma a cada vector una codificación de su posición.",
+      "deep": "El paper usa un vocabulario compartido de unos 37.000 tokens (byte-pair encoding) para inglés-alemán. Codificación posicional: PE(pos, 2i) = sin(pos / 10000^(2i/512)) y PE(pos, 2i+1) = cos(…). Los embeddings comparten pesos con la capa lineal final y se multiplican por √512.",
+      "link": "https://arxiv.org/abs/1706.03762",
+      "source": "arXiv 1706.03762 §3.4, §3.5 y §5.1",
+      "related": ["encoder", "softmax"]
+    },
+    "softmax": {
+      "title": "Linear + Softmax",
+      "short": "La última capa convierte el vector final en una probabilidad para cada token del vocabulario.",
+      "why": "La capa lineal proyecta el vector de 512 números a una puntuación por cada token posible (decenas de miles). El softmax convierte esas puntuaciones en probabilidades positivas que suman 1. Luego se elige el siguiente token de la traducción a partir de ellas.",
+      "deep": "softmax(z)ᵢ = e^(zᵢ) / Σⱼ e^(zⱼ). Las puntuaciones más altas se llevan casi toda la probabilidad.",
+      "link": "https://en.wikipedia.org/wiki/Softmax_function",
+      "source": "arXiv 1706.03762 §3.4 y figura 1; Wikipedia: Softmax function",
+      "related": ["decoder", "loss", "embedding"]
+    },
+    "translation_api": {
+      "title": "API de traducción",
+      "short": "Tu producto: los clientes te envían texto por internet y les devuelves la traducción, pagando por millón de caracteres.",
+      "why": "En 2017 las grandes nubes ya vendían traducción automática así; Google había pasado su traductor a redes neuronales a finales de 2016. Tus ingresos son caracteres servidos × precio. Si piden más de lo que tus GPUs pueden servir, se forma cola, la latencia sube y los clientes se van; si el precio es alto, llegan más despacio.",
+      "deep": "Ingresos de la semana = millones de caracteres servidos × precio por millón. Precio de referencia: 20 $ por millón de caracteres (Google Cloud Translation, 2017).",
+      "game": "Clientes, demanda, crecimiento y sensibilidad al precio son estimaciones de diseño del juego.",
+      "link": "https://arxiv.org/abs/1609.08144",
+      "source": "Google Cloud Translation (precio público 2017: 20 $/M caracteres); Wu et al., GNMT, arXiv 1609.08144; demanda y crecimiento: estimaciones de diseño (products.json)",
+      "related": ["inference"]
+    }
+  }
+}

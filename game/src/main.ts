@@ -1,118 +1,176 @@
-// TEMPORARY DEV HARNESS (Task 11) — Task 13 replaces this file with the real UI wired to the Worker bridge.
-// Drives the 3D garage from a local GameState (no worker) with keyboard shortcuts:
-//   g      buy a GTX 1080 Ti into the tower
-//   t      allocate every GPU to 'train' and start replicate_paper
-//   f      buy the open frame (injected if not yet released) + GPUs until there are 7 (> 1,800 W when all train)
-//   i      set the last GPU to idle      r  reset the breaker
-//   s      allocate every GPU to 'serve' (inference once the paper is replicated)
-//   h      dev only: cycle the first GPU's perf 1 → 0.7 → 0 (brain/garage state colours)
-//   b      toggle the brain (handled by BrainView)   Esc  close the expanded brain
-//   space  advance 24 game hours
+// Real wiring: data → scene (garage + brain) → Worker + SimBridge → UI; save/load/autosave (ruling R16).
+import './ui/ui.css';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
-import { advance, applyCommand, loadData, newGame } from './sim';
-import type { Command, GameState } from './sim';
+import learnData from '../data/learn.es.json';
+import { loadData, newGame } from './sim';
+import type { GameState } from './sim';
+import type { Speed } from './protocol';
+import { SimBridge } from './bridge';
+import type { WorkerLike } from './bridge';
+import { exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave } from './save';
 import { createScene } from './render/scene';
 import { GarageView } from './render/garage';
 import { BrainView } from './render/brain';
+import { mountUi } from './ui/ui';
+import { parseCards } from './ui/learn';
+import { brainCard, formatDate, t } from './ui/format';
+import { dateOf } from './sim/time';
 
 const data = loadData({ hardware, world, products, pulso });
-let state: GameState = newGame(data, 1, 'Dev Lab');
+const cards = parseCards(learnData);
 
 const app = document.getElementById('app') ?? document.body;
-document.body.style.margin = '0';
-document.body.style.background = '#0a0908';
 const canvas = document.createElement('canvas');
-canvas.style.cssText = 'display:block;width:100vw;height:100vh;touch-action:none';
+canvas.className = 'garage-canvas';
+canvas.setAttribute('aria-label', t('garage.canvas'));
 app.appendChild(canvas);
-const hud = document.createElement('pre');
-hud.style.cssText =
-  'position:fixed;left:12px;top:10px;margin:0;color:#cfd6dc;font:12px/1.45 ui-monospace,monospace;' +
-  'background:rgba(0,0,0,.45);padding:8px 10px;border-radius:6px;pointer-events:none';
-app.appendChild(hud);
 
 const ctx = createScene(canvas);
 const garage = new GarageView(ctx);
-garage.on('select', (e) => console.info(`[dev] select ${e.kind} ${e.id}`));
 const brain = new BrainView(ctx);
-brain.on('select', (e) => console.info(`[dev] select ${e.kind} ${e.blockId}`));
-// Dev only: lets browser checks freeze the brain's animation phase for screenshots.
-if (import.meta.env.DEV) (window as unknown as { __brain: BrainView }).__brain = brain;
 
-function render(): void {
-  garage.update(state, data);
-  brain.update(state, data);
-  const job = state.jobs.find((j) => j.id === 'replicate_paper');
-  hud.textContent =
-    `DEV HARNESS (temporal, Tarea 13 lo sustituye)\n` +
-    `hora ${state.hour}  caja ${state.cashUsd.toFixed(0)} $\n` +
-    `potencia ${state.power.watts.toFixed(0)} W  diferencial ${state.power.breakerTripped ? 'SALTADO' : 'ok'}\n` +
-    `GPUs ${state.gpus.length}  ${state.gpus.map((g) => `${g.id}:${state.allocation[g.id]}`).join(' ')}\n` +
-    `replicate_paper ${job ? `${job.status} ${job.doneP100h.toFixed(1)}/${job.workP100h}` : '-'}\n` +
-    `servido ${state.product.servedMCharsH.toFixed(2)} M car./h  clientes ${state.product.customers.toFixed(0)}
-` +
-    `[g] GPU torre  [t] entrenar  [s] servir  [f] bastidor+GPUs  [i] idle  [r] diferencial
-` +
-    `[h] perf GPU 1 (dev)  [b] cerebro  [espacio] +24 h`;
-}
+const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+const bridge = new SimBridge(worker as unknown as WorkerLike);
 
-const cmd = (c: Command): void => {
-  state = applyCommand(state, data, c);
+let state: GameState | null = null;
+let prevHour = 0;
+/** Ruling R16: only a game from a successful load, or one that replaced a missing/broken save, may be written. */
+let canSave = false;
+
+const setSpeed = (x: Speed): void => {
+  bridge.setSpeed(x);
+  ui.showSpeed(x);
 };
 
-function buyOpenFrame(): void {
-  const before = state.rigs.length;
-  cmd({ t: 'buy_rig', model: 'open_frame' });
-  if (state.rigs.length === before) {
-    // Dev only: the frame is released 2018-01-01; inject it so the garage can be tested from 2017.
-    const n = state.rigs.length + 1;
-    state = { ...state, cashUsd: state.cashUsd - 350, rigs: [...state.rigs, { id: `rig-${n}`, model: 'open_frame' }] };
-  }
-  const frame = state.rigs.find((r) => r.model === 'open_frame');
-  if (!frame) return;
-  const want = Math.max(4, 7 - state.gpus.length);
-  for (let i = 0; i < want; i++) cmd({ t: 'buy_gpu', model: 'gtx1080ti', rigId: frame.id });
-}
-
-window.addEventListener('keydown', (e) => {
-  switch (e.key) {
-    case 'g':
-      cmd({ t: 'buy_gpu', model: 'gtx1080ti', rigId: 'rig-1' });
-      break;
-    case 't':
-      for (const g of state.gpus) cmd({ t: 'allocate', gpuId: g.id, to: 'train' });
-      if (state.jobs.some((j) => j.id === 'replicate_paper' && j.status === 'ready')) cmd({ t: 'start_job', jobId: 'replicate_paper' });
-      break;
-    case 'f':
-      buyOpenFrame();
-      break;
-    case 'i': {
-      const last = state.gpus[state.gpus.length - 1];
-      if (last) cmd({ t: 'allocate', gpuId: last.id, to: 'idle' });
-      break;
-    }
-    case 'r':
-      cmd({ t: 'reset_breaker' });
-      break;
-    case 's':
-      for (const g of state.gpus) cmd({ t: 'allocate', gpuId: g.id, to: 'serve' });
-      break;
-    case 'h': {
-      // Dev only: fake a thermal state on the first GPU to check the state colours.
-      const next = (p: 0 | 0.7 | 1): 0 | 0.7 | 1 => (p === 1 ? 0.7 : p === 0.7 ? 0 : 1);
-      state = { ...state, gpus: state.gpus.map((g, i) => (i === 0 ? { ...g, perf: next(g.perf) } : g)) };
-      break;
-    }
-    case ' ':
-      e.preventDefault();
-      state = advance(state, data, 24);
-      break;
-    default:
-      return;
-  }
-  render();
+const ui = mountUi(app, {
+  data,
+  cards,
+  send: (c) => bridge.send(c),
+  setSpeed,
+  toggleBrain: () => {
+    brain.setExpanded(!brain.isExpanded);
+    ui.showBrain(brain.isExpanded);
+  },
+  highlightGpu: (id) => garage.highlight(id),
+  exportGame,
+  importGame: (f) => void importGame(f),
+  newGame: () => void startNewGame(),
 });
 
-render();
+garage.on('select', (e) => ui.selectGpu(e.id));
+brain.on('select', (e) => ui.openLearn(brainCard(e.blockId)));
+// The brain also toggles itself (b, Esc, click on the picture-in-picture): keep the HUD button in sync.
+let brainShown = brain.isExpanded;
+ctx.onFrame(() => {
+  if (brain.isExpanded !== brainShown) {
+    brainShown = brain.isExpanded;
+    ui.showBrain(brainShown);
+  }
+});
+
+function render(s: GameState): void {
+  state = s;
+  garage.update(s, data);
+  brain.update(s, data);
+  ui.update(s);
+}
+
+bridge.onState((s) => {
+  const prev = prevHour;
+  prevHour = s.hour;
+  render(s);
+  if (canSave && shouldAutosave(prev, s.hour)) void persist(s);
+});
+
+async function persist(s: GameState): Promise<void> {
+  try {
+    await saveGame(s);
+    ui.clearBanner('save-failed');
+    ui.clearBanner('storage');
+  } catch {
+    ui.banner('save-failed', t('save.failed'), { tone: 'error', dismissible: true });
+  }
+}
+
+function begin(s: GameState): void {
+  prevHour = s.hour;
+  render(s);
+  bridge.start(s);
+  setSpeed(1);
+}
+
+function randomSeed(): number {
+  return crypto.getRandomValues(new Uint32Array(1))[0]!;
+}
+
+function exportGame(): void {
+  if (!state) return;
+  const url = URL.createObjectURL(exportSave(state));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = exportFileName(state);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function importGame(file: File): Promise<void> {
+  const r = await importSave(file);
+  if (!r.ok) {
+    ui.banner('import', t(r.reason === 'version' ? 'save.importVersion' : 'save.importBad'), { tone: 'error', dismissible: true });
+    return;
+  }
+  ui.clearBanner('import');
+  const ok = await ui.confirm({
+    title: t('save.import.title'),
+    body: t('save.import.body', { lab: r.state.labName, date: formatDate(dateOf(r.state)) }),
+  });
+  if (!ok) return;
+  // An explicit, confirmed replacement: this game becomes the save (R16).
+  canSave = true;
+  begin(r.state);
+  void persist(r.state);
+}
+
+async function startNewGame(): Promise<void> {
+  const ok = await ui.confirm({ title: t('save.new.title'), body: t('save.new.body') });
+  if (!ok) return;
+  canSave = true;
+  const s = newGame(data, randomSeed(), t('save.defaultLab'));
+  begin(s);
+  void persist(s);
+}
+
+window.addEventListener('pagehide', () => {
+  // Best effort: IndexedDB may not finish before the page goes away.
+  if (canSave && state) void saveGame(state).catch(() => undefined);
+});
+
+async function boot(): Promise<void> {
+  const r = await loadGame();
+  if (r.ok) {
+    canSave = true;
+    begin(r.state);
+    return;
+  }
+  if (r.reason === 'unavailable') {
+    canSave = false;
+    ui.banner('storage', t('save.unavailable'), { tone: 'warn' });
+  } else {
+    canSave = true; // 'none' | 'corrupt' | 'version': the new game takes slot-1
+    if (r.reason === 'corrupt') ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
+    if (r.reason === 'version') ui.banner('load', t('save.version'), { tone: 'warn', dismissible: true });
+  }
+  begin(newGame(data, randomSeed(), t('save.defaultLab')));
+}
+
+// Dev only: lets browser checks read the state and freeze the brain's animation phase.
+if (import.meta.env.DEV) {
+  Object.assign(window as object, { __brain: brain, __state: () => state, __bridge: bridge });
+}
+
+void boot();
