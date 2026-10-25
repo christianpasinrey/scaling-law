@@ -5,14 +5,14 @@ import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
 import { applyCommand, loadData, newGame } from '../src/sim';
 import type { GameState } from '../src/sim';
-import { brainGpuIds, brainLayout, brainMode, nodeGpuState, pulseSpeed, waveRate } from '../src/render/brainLayout';
+import { brainGpuIds, brainLayout, brainMode, lossPanel, nodeGpuState, pulseSpeed, waveRate } from '../src/render/brainLayout';
 
 const data = loadData({ hardware, world, products, pulso });
-const layers = (ids: string[]) => brainLayout('transformer_2017', ids).filter((n) => n.kind === 'enc' || n.kind === 'dec');
+const nodesOf = (ids: string[]) => brainLayout('transformer_2017', ids).nodes;
 
-describe('brainLayout', () => {
+describe('brainLayout (ruling R19: data parallelism)', () => {
   it('has Figure 1 blocks: 2 embeddings, 6 encoder + 6 decoder layers, head', () => {
-    const nodes = brainLayout('transformer_2017', ['a']);
+    const nodes = nodesOf(['a']);
     expect(nodes.filter((n) => n.kind === 'enc').map((n) => n.layer)).toEqual([0, 1, 2, 3, 4, 5]);
     expect(nodes.filter((n) => n.kind === 'dec').map((n) => n.layer)).toEqual([0, 1, 2, 3, 4, 5]);
     expect(nodes.filter((n) => n.kind === 'embed_in')).toHaveLength(1);
@@ -25,43 +25,46 @@ describe('brainLayout', () => {
       expect(n.y).toBeGreaterThanOrEqual(0);
       expect(n.y).toBeLessThanOrEqual(1);
     }
-    // Encoder on the left, decoder on the right, both rising bottom to top.
     const enc = nodes.filter((n) => n.kind === 'enc');
     const dec = nodes.filter((n) => n.kind === 'dec');
     expect(Math.max(...enc.map((n) => n.x))).toBeLessThan(Math.min(...dec.map((n) => n.x)));
     for (let i = 1; i < 6; i++) expect(enc[i]!.y).toBeGreaterThan(enc[i - 1]!.y);
   });
 
-  it('1 GPU ⇒ every node on the same GPU', () => {
-    const nodes = brainLayout('transformer_2017', ['gpu-1']);
-    expect(nodes.every((n) => n.gpuId === 'gpu-1')).toBe(true);
+  it('declares data parallelism', () => {
+    expect(brainLayout('transformer_2017', ['a', 'b']).strategy).toBe('data_parallel');
   });
 
-  it('2 GPUs ⇒ encoder on one, decoder on the other', () => {
-    const nodes = brainLayout('transformer_2017', ['gpu-1', 'gpu-2']);
-    expect(nodes.filter((n) => n.kind === 'enc').every((n) => n.gpuId === 'gpu-1')).toBe(true);
-    expect(nodes.filter((n) => n.kind === 'dec').every((n) => n.gpuId === 'gpu-2')).toBe(true);
-    expect(nodes.find((n) => n.kind === 'embed_in')!.gpuId).toBe('gpu-1');
-    expect(nodes.find((n) => n.kind === 'head')!.gpuId).toBe('gpu-2');
+  it('forward pass order: input embedding, encoder, output embedding, decoder, head', () => {
+    const nodes = nodesOf([]);
+    const step = (id: string) => nodes.find((n) => n.id === id)!.step;
+    const order = ['embed_in', 'enc_0', 'enc_1', 'enc_2', 'enc_3', 'enc_4', 'enc_5', 'embed_out', 'dec_0', 'dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5', 'head'];
+    expect(order.map(step)).toEqual(order.map((_, i) => i));
   });
 
-  it('3 GPUs ⇒ 4/4/4 consecutive layers', () => {
-    const ls = layers(['a', 'b', 'c']);
-    const count = (id: string) => ls.filter((n) => n.gpuId === id).length;
-    expect([count('a'), count('b'), count('c')]).toEqual([4, 4, 4]);
-    // Consecutive: enc0..3 on a, enc4..5 + dec0..1 on b, dec2..5 on c.
-    expect(ls.map((n) => n.gpuId).join('')).toBe('aaaabbbbcccc');
+  it('1 GPU ⇒ every node on that GPU', () => {
+    expect(nodesOf(['gpu-1']).every((n) => n.gpuIds.join() === 'gpu-1')).toBe(true);
   });
 
-  it('0 GPUs ⇒ gpuId null without throwing', () => {
-    const nodes = brainLayout('transformer_2017', []);
+  it('2 GPUs ⇒ every node replicated on both (no layer split)', () => {
+    expect(nodesOf(['gpu-1', 'gpu-2']).every((n) => n.gpuIds.join() === 'gpu-1,gpu-2')).toBe(true);
+  });
+
+  it('3 GPUs ⇒ every node replicated on all three', () => {
+    expect(nodesOf(['a', 'b', 'c']).every((n) => n.gpuIds.length === 3)).toBe(true);
+  });
+
+  it('0 GPUs ⇒ empty gpuIds without throwing', () => {
+    const nodes = nodesOf([]);
     expect(nodes.length).toBe(15);
-    expect(nodes.every((n) => n.gpuId === null)).toBe(true);
+    expect(nodes.every((n) => n.gpuIds.length === 0)).toBe(true);
   });
 
-  it('more GPUs than layers ⇒ every layer still gets one, no throw', () => {
-    const ids = Array.from({ length: 14 }, (_, i) => `g${i}`);
-    expect(layers(ids).every((n) => n.gpuId !== null)).toBe(true);
+  it('nodes do not share the caller array', () => {
+    const ids = ['a'];
+    const nodes = nodesOf(ids);
+    ids.push('b');
+    expect(nodes[0]!.gpuIds).toEqual(['a']);
   });
 });
 
@@ -107,16 +110,40 @@ describe('brain mode and GPU selection', () => {
 });
 
 describe('pulse rates', () => {
-  it('inference pulse speed grows with served characters, 0 when nothing is served', () => {
+  it('inference pulse rate strictly increases over the real served range (log scale), 0 when nothing is served', () => {
     expect(pulseSpeed(0)).toBe(0);
-    expect(pulseSpeed(2)).toBeGreaterThan(pulseSpeed(1));
-    expect(Number.isFinite(pulseSpeed(1e9))).toBe(true);
     expect(pulseSpeed(Number.NaN)).toBe(0);
+    const v = [0.05, 0.5, 5, 50].map(pulseSpeed);
+    for (let i = 1; i < v.length; i++) expect(v[i]!).toBeGreaterThan(v[i - 1]!);
+    expect(v[0]!).toBeGreaterThan(0);
+    expect(Number.isFinite(pulseSpeed(1e9))).toBe(true);
   });
 
-  it('training wave rate follows effective throughput, 0 when nothing trains', () => {
+  it('training step rate follows effective throughput, 0 when nothing trains', () => {
     expect(waveRate(0)).toBe(0);
     expect(waveRate(2)).toBeGreaterThan(waveRate(1));
     expect(Number.isFinite(waveRate(1e9))).toBe(true);
+  });
+});
+
+describe('loss panel', () => {
+  const live = (f: number) => 10 - f;
+  const base = () => newGame(data, 1, 'T');
+
+  it('live while a job runs', () => {
+    const s = base();
+    const t = { ...s, jobs: s.jobs.map((j) => (j.id === 'replicate_paper' ? { ...j, status: 'running' as const, doneP100h: j.workP100h / 2 } : j)) };
+    expect(lossPanel(t, live)).toEqual({ kind: 'live', loss: 9.5, fraction: 0.5 });
+  });
+
+  it('final value (last curve point) after completion when not serving; hidden while serving', () => {
+    const s = base();
+    const done = { ...s, jobs: s.jobs.map((j) => (j.id === 'replicate_paper' ? { ...j, status: 'done' as const, lossCurve: [9, 4, 2.25] } : j)) };
+    expect(lossPanel(done, live)).toEqual({ kind: 'final', loss: 2.25 });
+    expect(lossPanel({ ...done, product: { ...done.product, servedMCharsH: 1 } }, live)).toEqual({ kind: 'hidden' });
+  });
+
+  it('hidden before any training', () => {
+    expect(lossPanel(base(), live)).toEqual({ kind: 'hidden' });
   });
 });

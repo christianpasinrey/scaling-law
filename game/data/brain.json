@@ -1,0 +1,41 @@
+{
+  "inference": {
+    "minMCharsH": {
+      "value": 0.05,
+      "source": "Render pacing (game-design choice, not a real-world figure): lowest served rate on the logarithmic pulse scale, about one seed customer's demand",
+      "approx": true
+    },
+    "maxMCharsH": {
+      "value": 400,
+      "source": "Render pacing (game-design choice, not a real-world figure): served rate at which the pulse scale saturates, about 10 GTX 1080 Ti serving at 40 M chars/h each",
+      "approx": true
+    },
+    "minCyclesPerS": {
+      "value": 0.15,
+      "source": "Render pacing (game-design choice): sentences per real second drawn at the bottom of the scale",
+      "approx": true
+    },
+    "maxCyclesPerS": {
+      "value": 1.0,
+      "source": "Render pacing (game-design choice): sentences per real second drawn at the top of the scale, still readable",
+      "approx": true
+    }
+  },
+  "training": {
+    "cyclesPerP100eq": {
+      "value": 0.18,
+      "source": "Render pacing (game-design choice): training steps per real second drawn per effective P100-equivalent",
+      "approx": true
+    },
+    "minCyclesPerS": {
+      "value": 0.12,
+      "source": "Render pacing (game-design choice): slowest drawn training step rate",
+      "approx": true
+    },
+    "maxCyclesPerS": {
+      "value": 0.8,
+      "source": "Render pacing (game-design choice): fastest drawn training step rate, still readable",
+      "approx": true
+    }
+  }
+}

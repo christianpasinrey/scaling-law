@@ -38,6 +38,8 @@ const garage = new GarageView(ctx);
 garage.on('select', (e) => console.info(`[dev] select ${e.kind} ${e.id}`));
 const brain = new BrainView(ctx);
 brain.on('select', (e) => console.info(`[dev] select ${e.kind} ${e.blockId}`));
+// Dev only: lets browser checks freeze the brain's animation phase for screenshots.
+if (import.meta.env.DEV) (window as unknown as { __brain: BrainView }).__brain = brain;
 
 function render(): void {
   garage.update(state, data);
