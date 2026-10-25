@@ -1,10 +1,12 @@
-// Real wiring: data → scene (garage + brain) → Worker + SimBridge → UI; save/load/autosave (ruling R16).
+// Real wiring: data → scene (garage + brain) → Worker + SimBridge → UI; save/load/autosave (ruling R16);
+// boot flow: title screen (saved game) or the opening → lab name → garage; end screens once the game has an outcome.
 import './ui/ui.css';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
 import learnData from '../data/learn.es.json';
+import reality from '../data/reality.es.json';
 import { loadData, newGame } from './sim';
 import type { GameState } from './sim';
 import type { Speed } from './protocol';
@@ -18,9 +20,16 @@ import { mountUi } from './ui/ui';
 import { parseCards } from './ui/learn';
 import { brainCard, formatDate, t } from './ui/format';
 import { dateOf } from './sim/time';
+import { runIntro } from './intro/intro';
+import { openScreen } from './ui/screen';
+import type { Screen } from './ui/screen';
+import { parseFacts, showEndScreen } from './ui/endscreen';
+import { el } from './ui/dom';
+import { confirmDialog } from './ui/dialog';
 
 const data = loadData({ hardware, world, products, pulso });
 const cards = parseCards(learnData);
+const facts = parseFacts(reality);
 
 const app = document.getElementById('app') ?? document.body;
 const canvas = document.createElement('canvas');
@@ -80,9 +89,14 @@ function render(s: GameState): void {
 
 bridge.onState((s) => {
   const prev = prevHour;
+  const wasOver = state?.outcome != null;
   prevHour = s.hour;
   render(s);
-  if (canSave && shouldAutosave(prev, s.hour)) void persist(s);
+  if (s.outcome !== null && !wasOver) {
+    // The finished game stays the save, so a reload shows the end screen instead of resuming it.
+    if (canSave) void persist(s);
+    showEnd(s);
+  } else if (canSave && shouldAutosave(prev, s.hour)) void persist(s);
 });
 
 async function persist(s: GameState): Promise<void> {
@@ -99,7 +113,89 @@ function begin(s: GameState): void {
   prevHour = s.hour;
   render(s);
   bridge.start(s);
-  setSpeed(1);
+  if (s.outcome !== null) {
+    setSpeed(0);
+    showEnd(s);
+  } else setSpeed(1);
+}
+
+// ---------------------------------------------------------------- full-screen layers
+
+let screen: Screen | null = null;
+let disposeIntro: (() => void) | null = null;
+
+function closeScreen(): void {
+  disposeIntro?.();
+  disposeIntro = null;
+  screen?.close();
+  screen = null;
+}
+
+/** The opening; its hand-off card asks for the lab name, then `start` gets it. */
+function showIntro(start: (labName: string) => void): void {
+  closeScreen();
+  setSpeed(0); // a game behind the opening (menu → Partida nueva) must not run on
+  const sc = openScreen('intro-screen', t('intro.label'));
+  screen = sc;
+  const intro = runIntro(sc.el, {
+    skippable: true,
+    cards,
+    defaultName: t('save.defaultLab'),
+    onDone: (name) => {
+      closeScreen();
+      start(name);
+    },
+  });
+  disposeIntro = () => intro.dispose();
+}
+
+/** A new game from the opening. `explicit`: the player chose it, so it may replace the save (R16). */
+function startFresh(labName: string, explicit: boolean): void {
+  if (explicit) canSave = true;
+  const s = newGame(data, randomSeed(), labName);
+  begin(s);
+  if (canSave) void persist(s);
+}
+
+function showTitle(saved: GameState): void {
+  closeScreen();
+  const sc = openScreen('title-screen', t('title.label'));
+  screen = sc;
+  const cont = el('button', { type: 'button', class: 'btn btn-primary btn-lg' }, t('title.continue'));
+  const fresh = el('button', { type: 'button', class: 'btn btn-lg' }, t('title.new'));
+  cont.addEventListener('click', () => {
+    closeScreen();
+    begin(saved);
+  });
+  fresh.addEventListener('click', () => {
+    void confirmDialog(sc.el, { title: t('save.new.title'), body: t('save.new.body') }).then((ok) => {
+      if (ok) showIntro((name) => startFresh(name, true));
+    });
+  });
+  sc.el.append(
+    el(
+      'div',
+      { class: 'title-card' },
+      el('h1', { class: 'title-brand' }, 'SCALING LAW'),
+      el('p', { class: 'title-tagline' }, t('title.tagline')),
+      el('p', { class: 'title-saved num' }, t('title.saved', { lab: saved.labName, date: formatDate(dateOf(saved)) })),
+      el('div', { class: 'title-actions' }, cont, fresh),
+    ),
+  );
+  cont.focus();
+}
+
+function showEnd(s: GameState): void {
+  if (screen?.el.classList.contains('endscreen')) return;
+  closeScreen();
+  screen = showEndScreen(s, {
+    data,
+    facts,
+    onRestart: () => {
+      screen = null;
+      showIntro((name) => startFresh(name, true));
+    },
+  });
 }
 
 function randomSeed(): number {
@@ -139,10 +235,7 @@ async function importGame(file: File): Promise<void> {
 async function startNewGame(): Promise<void> {
   const ok = await ui.confirm({ title: t('save.new.title'), body: t('save.new.body') });
   if (!ok) return;
-  canSave = true;
-  const s = newGame(data, randomSeed(), t('save.defaultLab'));
-  begin(s);
-  void persist(s);
+  showIntro((name) => startFresh(name, true));
 }
 
 // Best effort: IndexedDB may not finish before the page goes away; hiding the tab is the last reliable moment on mobile.
@@ -155,12 +248,29 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function boot(): Promise<void> {
+  // Dev only: ?devstate=seed_round|bankrupt opens a finished game (not saved unless &devsave=1).
+  if (import.meta.env.DEV) {
+    const q = new URLSearchParams(location.search);
+    const kind = q.get('devstate');
+    if (kind) {
+      const { devState } = await import('./dev/devstate');
+      const s = devState(kind, data);
+      if (s) {
+        canSave = q.get('devsave') === '1';
+        begin(s);
+        if (canSave) void persist(s);
+        return;
+      }
+    }
+  }
   const p = startPolicy(await loadGame());
   canSave = p.canSave;
   if (p.notice === 'unavailable') ui.banner('storage', t('save.unavailable'), { tone: 'warn' });
   else if (p.notice === 'corrupt') ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
   else if (p.notice === 'version') ui.banner('load', t('save.version'), { tone: 'warn', dismissible: true });
-  begin(p.resume ?? newGame(data, randomSeed(), t('save.defaultLab')));
+  if (!p.resume) showIntro((name) => startFresh(name, false));
+  else if (p.resume.outcome !== null) begin(p.resume); // a finished game: straight to its end screen
+  else showTitle(p.resume);
 }
 
 // Dev only: lets browser checks read the state and freeze the brain's animation phase.

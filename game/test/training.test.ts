@@ -210,3 +210,34 @@ describe('determinism with the rng consumed', () => {
     expect(restoreRng(a.rng).next()).toBe(restoreRng(b.rng).next());
   });
 });
+
+describe('trained GPU-hours counter', () => {
+  it('counts one hour per live training GPU while a job runs', () => {
+    const s = stepTraining(training(3), dNoFail, fakeRng(0.99));
+    expect(s.trainedGpuHours).toBe(3);
+    const s2 = stepTraining(s, dNoFail, fakeRng(0.99));
+    expect(s2.trainedGpuHours).toBe(6);
+  });
+  it('skips GPUs shut down by heat and counts nothing while the breaker is out or no job runs', () => {
+    const s0 = training(2);
+    const off = stepTraining({ ...s0, gpus: [{ ...s0.gpus[0]!, perf: 0 }, s0.gpus[1]!] }, dNoFail, fakeRng(0.99));
+    expect(off.trainedGpuHours).toBe(1);
+    const tripped = stepTraining({ ...s0, power: { ...s0.power, breakerTripped: true } }, dNoFail, fakeRng(0.99));
+    expect(tripped.trainedGpuHours ?? 0).toBe(0);
+    const idle = newGame(d, 1, 'Lab');
+    expect(stepTraining({ ...idle, allocation: { 'gpu-1': 'train' } }, dNoFail, fakeRng(0.99)).trainedGpuHours ?? 0).toBe(0);
+  });
+  it('still counts the hour a GPU fails (the time was spent)', () => {
+    const s = stepTraining(training(1), d, fakeRng(0));
+    expect(s.trainedGpuHours).toBe(1);
+  });
+  it('accumulates over a full replication with one GPU (≈ 96 h)', () => {
+    let s = training(1);
+    let h = 0;
+    while (job(s).status === 'running' && h < 200) {
+      s = advance(s, dNoFail, 1);
+      h++;
+    }
+    expect(s.trainedGpuHours).toBe(h);
+  });
+});

@@ -293,6 +293,11 @@ export interface GameState {
   negativeWeeks: number;
   outcome: null | 'seed_round' | 'bankrupt';
   round?: { status: 'offered' | 'declined'; offeredHour: number; declinedHour?: number };
+  /**
+   * GPU-hours own GPUs spent training (one per live 'train' GPU per hour while a job runs and the breaker holds,
+   * including hours later lost to a rollback). Absent in saves from before it existed: read as 0.
+   */
+  trainedGpuHours?: number;
   /** Pulso items created on game day `day` (cap bookkeeping). */
   pulsoDay?: { day: number; created: number };
 }

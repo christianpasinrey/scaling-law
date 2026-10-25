@@ -923,7 +923,7 @@ export class BrainView {
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (document.querySelector('dialog[open]')) return; // a modal dialog owns the keyboard
+    if (document.querySelector('dialog[open], [data-screen]')) return; // a modal dialog or a full-screen layer owns the keyboard
     if (e.key === 'b' || e.key === 'B') this.setExpanded(!this.expanded);
     else if (e.key === 'Escape' && this.expanded) this.setExpanded(false);
   };

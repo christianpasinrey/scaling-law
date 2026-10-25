@@ -1,0 +1,26 @@
+{
+  "note": "«Mientras tanto en el mundo real»: hechos verificados para la pantalla de cierre del M1. Cada uno lleva su fuente.",
+  "facts": [
+    {
+      "date": "2018-02-15",
+      "title": "ELMo",
+      "text": "El Allen Institute for AI y la Universidad de Washington publican ELMo («Deep contextualized word representations»): representaciones de palabras preentrenadas en mucho texto que dependen del contexto de la frase.",
+      "source": "arXiv 1802.05365 v1 (15 feb 2018)",
+      "link": "https://arxiv.org/abs/1802.05365"
+    },
+    {
+      "date": "2018-06-11",
+      "title": "GPT",
+      "text": "OpenAI publica «Improving Language Understanding by Generative Pre-Training» (el primer GPT): un Transformer de 12 capas solo con decodificador, unos 117 millones de parámetros, preentrenado con unos 7.000 libros durante un mes en 8 GPUs y luego ajustado a cada tarea.",
+      "source": "OpenAI, «Improving language understanding with unsupervised learning» (11 jun 2018: un mes en 8 GPUs); Radford et al. 2018 §4.1 (12 capas, BooksCorpus); Radford et al. 2019 (GPT-2), tabla 2 (117M, equivalente al GPT original)",
+      "link": "https://openai.com/index/language-unsupervised/"
+    },
+    {
+      "date": "2018-10-11",
+      "title": "BERT",
+      "text": "Google AI Language publica BERT: un codificador Transformer bidireccional preentrenado; la versión grande tiene 340 millones de parámetros y se preentrenó 4 días en 16 Cloud TPU (64 chips).",
+      "source": "Devlin et al., arXiv 1810.04805 v1 (11 oct 2018) §3.1 (340M) y §3.4 (4 días, 16 Cloud TPU)",
+      "link": "https://arxiv.org/abs/1810.04805"
+    }
+  ]
+}

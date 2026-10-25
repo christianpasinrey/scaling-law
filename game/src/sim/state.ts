@@ -48,6 +48,7 @@ export function newGame(d: GameData, seed: number, labName: string): GameState {
     flags: {},
     weekRentUsd: 0,
     negativeWeeks: 0,
+    trainedGpuHours: 0,
     outcome: null,
   };
 }

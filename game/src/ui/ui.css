@@ -894,6 +894,229 @@ dialog.confirm h2 {
   margin-top: 14px;
 }
 
+/* ---------------------------------------------------------------- objective (HUD, under the date) */
+
+.objective {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin-top: 4px;
+  padding: 3px 8px;
+  max-width: 340px;
+  text-align: left;
+  background: rgba(91, 231, 196, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.objective:hover:not(:disabled) {
+  border-color: var(--cyan);
+}
+.objective:disabled {
+  cursor: default;
+}
+.objective .obj-step {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.objective .obj-text {
+  font-weight: 600;
+}
+.objective .obj-prog {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+.objective[data-obj='round'] {
+  border-color: var(--amber);
+  background: rgba(245, 176, 65, 0.12);
+}
+
+dialog.round-offer {
+  max-width: min(480px, calc(100vw - 32px));
+}
+
+/* ---------------------------------------------------------------- full-screen layers: title, end of M1 */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.btn-lg {
+  padding: 10px 18px;
+  font-size: 15px;
+  min-height: 44px;
+}
+.btn:focus-visible,
+.objective:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.title-screen {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(900px 600px at 70% 20%, rgba(18, 48, 74, 0.55), transparent 60%),
+    #070a10;
+}
+.title-card {
+  width: min(520px, 100%);
+  text-align: center;
+}
+.title-brand {
+  margin: 0;
+  font-size: clamp(30px, 8vw, 52px);
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+}
+.title-tagline {
+  color: var(--text);
+  font-size: 16px;
+  margin: 10px 0 4px;
+}
+.title-saved {
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+.title-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.endscreen {
+  padding: 24px 16px;
+  box-sizing: border-box;
+  background: rgba(5, 7, 10, 0.86);
+  backdrop-filter: blur(4px);
+}
+.end-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 22px 26px;
+  box-sizing: border-box;
+}
+.end-kicker {
+  margin: 0;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.end-card h1 {
+  margin: 6px 0 6px;
+  font-size: clamp(22px, 5vw, 30px);
+  color: var(--cyan);
+  overflow-wrap: anywhere;
+}
+.endscreen.lost .end-card h1 {
+  color: var(--red);
+}
+.end-lead {
+  margin: 0 0 16px;
+  font-size: 15px;
+}
+.end-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(136px, 100%), 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.end-stat {
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.end-stat dt {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.end-stat dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.end-section h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+  color: var(--violet);
+}
+.end-section h3 {
+  font-size: 14px;
+  margin: 14px 0 4px;
+  color: var(--muted);
+}
+.facts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.facts-list li {
+  border-left: 2px solid var(--violet);
+  padding-left: 12px;
+}
+.facts-list time {
+  color: var(--violet);
+  font-size: 12px;
+}
+.facts-list p {
+  margin: 2px 0 0;
+}
+.facts-list a {
+  color: var(--muted);
+}
+.end-money {
+  margin: 0 0 10px;
+  max-width: 420px;
+}
+.end-money .kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.end-causes {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.end-next {
+  margin: 18px 0 0;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 0.04em;
+}
+.end-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+@media (max-width: 560px) {
+  .endscreen {
+    padding: 12px 8px;
+  }
+  .end-card {
+    padding: 16px;
+  }
+}
+
 /* ---------------------------------------------------------------- narrow screens: HUD wraps, panels become a bottom sheet */
 
 @media (max-width: 720px) {

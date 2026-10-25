@@ -13,6 +13,8 @@ import * as learn from './learn';
 import * as pulso from './pulso';
 import * as shop from './shop';
 import { confirmDialog } from './dialog';
+import { openRoundOffer } from './round';
+import { keyboardOwned } from './screen';
 import type { ConfirmOptions } from './dialog';
 import type { LearnCard } from './learn';
 
@@ -43,6 +45,8 @@ export interface UiApi {
   banner(id: string, text: string, opts?: { dismissible?: boolean; tone?: 'warn' | 'error' | 'info' }): void;
   clearBanner(id: string): void;
   confirm(o: ConfirmOptions): Promise<boolean>;
+  /** Opens the seed-round offer if one is pending. */
+  openRound(): void;
 }
 
 const PANELS: { id: PanelId; key: TextKey }[] = [
@@ -69,7 +73,18 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
     cardTitle: (id) => learnApi.title(id),
   };
 
-  const hudApi = hud.mount(root, { ...panelDeps, setSpeed: deps.setSpeed, toggleBrain: deps.toggleBrain, exportGame: deps.exportGame, importGame: deps.importGame, newGame: deps.newGame });
+  const hudApi = hud.mount(root, {
+    ...panelDeps,
+    setSpeed: deps.setSpeed,
+    toggleBrain: deps.toggleBrain,
+    exportGame: deps.exportGame,
+    importGame: deps.importGame,
+    newGame: deps.newGame,
+    openObjective: (panel) => {
+      if (panel === 'round') openRound();
+      else if (panel) openPanel(panel);
+    },
+  });
   const banners = el('div', { class: 'banners', role: 'status' });
   root.append(banners);
   // Panels and the learn card start below the HUD and banners, whose height depends on wrapping.
@@ -123,6 +138,9 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
   }
 
   let current: PanelId | null = null;
+  let latest: GameState | null = null;
+  /** offeredHour of the last offer opened automatically. */
+  let shownOffer: number | null = null;
 
   const focus = (f: NonNullable<PulsoItem['focus']>): void => {
     if (f.kind === 'gpu' && f.id) api.selectGpu(f.id, true);
@@ -134,7 +152,7 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
 
   const shopApi = shop.mount(bodies.get('shop')!, panelDeps);
   const allocApi = allocation.mount(bodies.get('alloc')!, { ...panelDeps, selectGpu: (id) => api.selectGpu(id) });
-  const jobsApi = jobs.mount(bodies.get('jobs')!, panelDeps, root);
+  const jobsApi = jobs.mount(bodies.get('jobs')!, panelDeps, () => openRound());
   const pulsoApi = pulso.mount(bodies.get('pulso')!, { focus, selectGpu: (id) => api.selectGpu(id, true) });
 
   function openPanel(id: PanelId | null, returnFocus = false): void {
@@ -167,7 +185,7 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
   let lastRunning: Speed = 1;
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
-    if (document.querySelector('dialog[open]')) return;
+    if (keyboardOwned()) return; // a modal dialog or a full-screen layer owns the keyboard
     if (e.key === ' ' || e.code === 'Space') {
       // Space is the game's pause key everywhere except text fields and dialogs (Enter still activates buttons):
       // a keyboard player nearly always has a button focused, so deferring to it would make pause unreachable.
@@ -187,7 +205,19 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
       pulsoApi.update(s);
       refreshBadge();
       learnApi.notice(conceptsPresent(s, deps.data));
-      if (s.outcome) banner('outcome', t(s.outcome === 'seed_round' ? 'outcome.seed_round' : 'outcome.bankrupt'), { tone: 'info' });
+      latest = s;
+      // A game that just ended (e.g. bankrupt with an offer pending) leaves no decision open under the end screen.
+      if (s.outcome !== null) root.querySelector<HTMLDialogElement>('dialog.round-offer[open]')?.close();
+      // The investor just showed up: pause and show the offer once per offer (it stays reachable afterwards).
+      const offerKey = s.round?.status === 'offered' && s.outcome === null ? s.round.offeredHour : null;
+      if (offerKey !== null && offerKey !== shownOffer) {
+        shownOffer = offerKey;
+        const before = speed;
+        if (before !== 0) deps.setSpeed(0);
+        void openRoundOffer(root, s, deps.data, deps.send).then(() => {
+          if (before !== 0 && speed === 0 && latest?.outcome === null) deps.setSpeed(before);
+        });
+      }
     },
     showSpeed(x) {
       speed = x;
@@ -214,7 +244,12 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
     confirm(o) {
       return confirmDialog(root, o);
     },
+    openRound,
   };
+
+  function openRound(): void {
+    if (latest) void openRoundOffer(root, latest, deps.data, deps.send);
+  }
 
   function banner(id: string, text: string, opts: { dismissible?: boolean; tone?: 'warn' | 'error' | 'info' } = {}): void {
     let b = banners.querySelector<HTMLElement>(`[data-banner="${CSS.escape(id)}"]`);

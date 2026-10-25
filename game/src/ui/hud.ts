@@ -5,6 +5,8 @@ import type { Speed } from '../protocol';
 import { el, learnButton, setAttr, setHidden, setText } from './dom';
 import type { PanelDeps } from './dom';
 import { formatDate, formatInt, formatUsd, formatWatts, lastWeekBalance, powerBar, t } from './format';
+import { currentObjective } from './objectives';
+import type { Objective } from './objectives';
 
 export interface HudDeps extends PanelDeps {
   setSpeed(x: Speed): void;
@@ -12,6 +14,8 @@ export interface HudDeps extends PanelDeps {
   exportGame(): void;
   importGame(file: File): void;
   newGame(): void;
+  /** The objective under the date was clicked. */
+  openObjective(panel: Objective['panel']): void;
 }
 
 export interface HudApi {
@@ -36,7 +40,14 @@ export function mount(root: HTMLElement, deps: HudDeps): HudApi {
 
   const lab = el('span', { class: 'lab-name' });
   const date = el('time', { class: 'num date' });
-  const ident = el('div', { class: 'stat ident' }, lab, date);
+  // Current M1 objective, under the date; clicking it opens the panel (or the offer) that moves it forward.
+  const objStep = el('span', { class: 'obj-step' });
+  const objText = el('span', { class: 'obj-text' });
+  const objProg = el('span', { class: 'obj-prog num' });
+  const objBtn = el('button', { type: 'button', class: 'objective' }, objStep, objText, objProg);
+  let objPanel: Objective['panel'] = null;
+  objBtn.addEventListener('click', () => deps.openObjective(objPanel));
+  const ident = el('div', { class: 'stat ident' }, lab, date, objBtn);
 
   const speedBtns = SPEEDS.map((s) => {
     const b = el('button', { type: 'button', class: 'seg', 'aria-pressed': 'false', title: t(s.title), 'aria-label': t(s.title) }, s.label);
@@ -170,6 +181,18 @@ export function mount(root: HTMLElement, deps: HudDeps): HudApi {
       refreshCap();
 
       setText(rep, formatInt(s.reputation));
+
+      const o = currentObjective(s, deps.data);
+      objPanel = o.panel;
+      objBtn.dataset.obj = o.id;
+      objBtn.disabled = o.panel === null;
+      setText(objStep, o.step <= 4 ? t('obj.label', { step: o.step }) : t('obj.label.done'));
+      setText(objText, o.text);
+      const prog = (o.progress ?? []).map((p) => `${formatInt(p.done)}/${formatInt(p.total)} ${p.label}`).join(' · ');
+      setText(objProg, prog);
+      setHidden(objProg, prog === '');
+      setAttr(objBtn, 'aria-label', `${o.step <= 4 ? t('obj.label', { step: o.step }) : t('obj.label.done')}: ${o.text}${prog ? ` (${prog})` : ''}`);
+      setAttr(objBtn, 'title', o.panel ? t('obj.open', { text: o.text }) : null);
     },
     showSpeed(x) {
       shownSpeed = x;

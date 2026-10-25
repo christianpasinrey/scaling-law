@@ -3,7 +3,6 @@
 import type { GameState, TrainingJob } from '../sim';
 import { el, learnButton, sectionHead, setAttr, setHidden, setText } from './dom';
 import type { PanelDeps } from './dom';
-import { confirmDialog } from './dialog';
 import { formatDecimal, formatHours, formatInt, formatUsd, fraction, jobEtaHours, lossPolyline, t, trainingRate, weeklyRevenueEstimate } from './format';
 
 export interface JobsApi {
@@ -30,7 +29,7 @@ interface JobRow {
   lossText: HTMLElement;
 }
 
-export function mount(root: HTMLElement, deps: PanelDeps, dialogRoot: HTMLElement): JobsApi {
+export function mount(root: HTMLElement, deps: PanelDeps, openRound: () => void): JobsApi {
   const d = deps.data;
   const tr = d.products.translation;
   const loss = d.products.training.loss;
@@ -214,18 +213,13 @@ export function mount(root: HTMLElement, deps: PanelDeps, dialogRoot: HTMLElemen
       roundBox.replaceChildren(sectionHead(deps, t('jobs.round'), 'funding_round'), el('p', { class: 'small muted' }, t('jobs.round.declined')));
       return;
     }
-    const accept = el('button', { type: 'button', class: 'btn btn-primary' }, t('jobs.round.accept'));
-    const decline = el('button', { type: 'button', class: 'btn' }, t('jobs.round.decline'));
-    accept.addEventListener('click', () => {
-      void confirmDialog(dialogRoot, { title: t('jobs.round.confirm.title'), body: t('jobs.round.confirm.body', vars) }).then((ok) => {
-        if (ok) deps.send({ t: 'accept_round' });
-      });
-    });
-    decline.addEventListener('click', () => deps.send({ t: 'decline_round' }));
+    // The decision itself lives in the offer modal (it opens when the investor shows up).
+    const view = el('button', { type: 'button', class: 'btn btn-primary' }, t('round.view'));
+    view.addEventListener('click', () => openRound());
     roundBox.replaceChildren(
       sectionHead(deps, t('jobs.round'), 'funding_round'),
       el('p', { class: 'small' }, t('jobs.round.offer', vars), ' ', learnButton(deps, 'dilution')),
-      el('div', { class: 'card-foot' }, decline, accept),
+      el('div', { class: 'card-foot' }, view),
     );
   }
 

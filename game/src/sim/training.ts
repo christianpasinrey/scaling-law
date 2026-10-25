@@ -34,6 +34,10 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   let cur = s;
   let grants = s.grants;
 
+  // Time spent, whatever happens to the progress below (the end screen reports it).
+  const liveTrainers = s.power.breakerTripped ? 0 : trainGpus.filter((g) => g.perf > 0).length;
+  const trainedGpuHours = (s.trainedGpuHours ?? 0) + liveTrainers;
+
   // Breaker out: the garage has no power, anything since the last checkpoint is lost.
   if (s.power.breakerTripped) {
     rolledBack = true;
@@ -83,6 +87,7 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   const updated: TrainingJob = { ...job, doneP100h: done, checkpointP100h: checkpoint, lossCurve, status: finished ? 'done' : 'running' };
   let next: GameState = {
     ...cur,
+    trainedGpuHours,
     grants,
     jobs: s.jobs.map((j) => (j.id === job.id ? updated : j)),
   };
