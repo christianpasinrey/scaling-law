@@ -43,6 +43,15 @@ const brain = new BrainView(ctx);
 
 const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
 const bridge = new SimBridge(worker as unknown as WorkerLike);
+// An uncaught error inside the simulation: stop the clock and tell the player (the last good state can be exported).
+const onWorkerError = (e: Event): void => {
+  e.preventDefault();
+  console.error('simulation worker error', e);
+  setSpeed(0);
+  ui.banner('worker', t('sim.error'), { tone: 'error' });
+};
+worker.addEventListener('error', onWorkerError);
+worker.addEventListener('messageerror', onWorkerError);
 
 let state: GameState | null = null;
 let prevHour = 0;
@@ -109,14 +118,46 @@ async function persist(s: GameState): Promise<void> {
   }
 }
 
-function begin(s: GameState): void {
-  prevHour = s.hour;
-  render(s);
-  bridge.start(s);
+/**
+ * Shows and starts a game. Returns false (and puts the previous game back on screen) if the state could not be
+ * applied, e.g. an import that passed validation but breaks rendering; the caller tells the player.
+ */
+function begin(s: GameState): boolean {
+  const before = state;
+  const beforeHour = prevHour;
+  try {
+    prevHour = s.hour;
+    ui.reset();
+    render(s);
+    bridge.start(s);
+  } catch (err) {
+    console.error(err);
+    setSpeed(0);
+    prevHour = beforeHour;
+    state = before;
+    if (before) {
+      try {
+        render(before);
+      } catch {
+        // the previous view stays as it was
+      }
+    }
+    return false;
+  }
   if (s.outcome !== null) {
     setSpeed(0);
     showEnd(s);
+  } else if (s.round?.status === 'offered') {
+    setSpeed(0); // the investor's offer is open: the player decides before time runs again
   } else setSpeed(1);
+  return true;
+}
+
+/** begin() for a game read from storage: if it cannot be shown, say so and start a new one instead. */
+function beginLoaded(s: GameState): void {
+  if (begin(s)) return;
+  ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
+  showIntro((name) => startFresh(name, false));
 }
 
 // ---------------------------------------------------------------- full-screen layers
@@ -165,7 +206,7 @@ function showTitle(saved: GameState): void {
   const fresh = el('button', { type: 'button', class: 'btn btn-lg' }, t('title.new'));
   cont.addEventListener('click', () => {
     closeScreen();
-    begin(saved);
+    beginLoaded(saved);
   });
   fresh.addEventListener('click', () => {
     void confirmDialog(sc.el, { title: t('save.new.title'), body: t('save.new.body') }).then((ok) => {
@@ -226,9 +267,12 @@ async function importGame(file: File): Promise<void> {
     body: t('save.import.body', { lab: r.state.labName, date: formatDate(dateOf(r.state)) }),
   });
   if (!ok) return;
+  if (!begin(r.state)) {
+    ui.banner('import', t('save.importBad'), { tone: 'error', dismissible: true });
+    return;
+  }
   // An explicit, confirmed replacement: this game becomes the save (R16).
   canSave = true;
-  begin(r.state);
   void persist(r.state);
 }
 
@@ -269,7 +313,7 @@ async function boot(): Promise<void> {
   else if (p.notice === 'corrupt') ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
   else if (p.notice === 'version') ui.banner('load', t('save.version'), { tone: 'warn', dismissible: true });
   if (!p.resume) showIntro((name) => startFresh(name, false));
-  else if (p.resume.outcome !== null) begin(p.resume); // a finished game: straight to its end screen
+  else if (p.resume.outcome !== null) beginLoaded(p.resume); // a finished game: straight to its end screen
   else showTitle(p.resume);
 }
 

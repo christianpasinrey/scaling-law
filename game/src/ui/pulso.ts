@@ -10,6 +10,16 @@ export interface PulsoApi {
   /** Items newer than the last time the feed was shown. */
   unseen(): number;
   markSeen(): void;
+  /** Another game was loaded (new game, import, resume): nothing of it has been seen yet. */
+  reset(): void;
+}
+
+/**
+ * The last item hour the player has seen, given the newest item hour now in the feed. A feed whose newest item is
+ * older than what was seen belongs to another game (a restart or an import), so nothing of it has been seen.
+ */
+export function seenFloor(seenUpTo: number, latest: number): number {
+  return latest < seenUpTo ? -1 : seenUpTo;
 }
 
 const SHOWN = 60;
@@ -37,6 +47,7 @@ export function mount(root: HTMLElement, deps: FocusDeps): PulsoApi {
       state = s;
       const items = pulsoNewestFirst(s).slice(0, SHOWN);
       latest = s.pulso.reduce((m, p) => Math.max(m, p.hour), -1);
+      seenUpTo = seenFloor(seenUpTo, latest);
       const k = items.map((i) => `${i.id}:${i.count}:${i.hour}`).join('|');
       empty.hidden = items.length > 0;
       if (k === key) return;
@@ -67,6 +78,10 @@ export function mount(root: HTMLElement, deps: FocusDeps): PulsoApi {
     },
     markSeen() {
       seenUpTo = latest;
+    },
+    reset() {
+      seenUpTo = -1;
+      latest = -1;
     },
   };
 }

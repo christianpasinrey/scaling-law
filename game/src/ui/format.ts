@@ -78,6 +78,9 @@ export interface PowerBar {
   safePct: number;
   tripPct: number;
   zone: PowerZone;
+  /** The bar's span in W (aria-valuemax) and the reading clamped into 0..max (aria-valuenow). */
+  maxW: number;
+  nowW: number;
 }
 
 /** The bar spans 0 .. trip × 1.15 so both marks (1.440 and 1.800 W) sit inside it. */
@@ -89,6 +92,8 @@ export function powerBar(watts: number, world: { circuitSafeWatts: number; circu
     safePct: (world.circuitSafeWatts / max) * 100,
     tripPct: (world.circuitWatts / max) * 100,
     zone: powerZone(w, world.circuitSafeWatts, world.circuitWatts, tripped),
+    maxW: Math.round(max),
+    nowW: Math.round(Math.min(max, w)),
   };
 }
 

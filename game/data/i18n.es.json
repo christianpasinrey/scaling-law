@@ -165,6 +165,8 @@
   "save.new.body": "La partida actual se sustituirá y se perderá si no la has exportado.",
   "save.defaultLab": "Mi laboratorio",
   "banner.dismiss": "Cerrar aviso",
+  "breaker.banner": "Han saltado los plomos (magnetotérmico): el garaje está sin luz y lo entrenado desde el último punto de control se pierde. Baja el consumo y pulsa «Rearmar».",
+  "sim.error": "La simulación ha fallado y el juego se ha puesto en pausa. Exporta la partida desde el menú y recarga la página.",
   "pulso.count.aria": "{n} veces",
   "garage.canvas": "Garaje 3D: haz clic en una GPU para seleccionarla",
   "hud.breaker.reset.aria": "Rearmar los plomos (magnetotérmico)",

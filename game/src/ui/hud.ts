@@ -63,7 +63,7 @@ export function mount(root: HTMLElement, deps: HudDeps): HudApi {
   const fill = el('div', { class: 'pbar-fill' });
   const safeMark = el('div', { class: 'pbar-mark safe' });
   const tripMark = el('div', { class: 'pbar-mark trip' });
-  const bar = el('div', { class: 'pbar', role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(w.circuitWatts), 'aria-label': t('hud.power') }, fill, safeMark, tripMark);
+  const bar = el('div', { class: 'pbar', role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(powerBar(0, w, false).maxW), 'aria-label': t('hud.power') }, fill, safeMark, tripMark);
   const watts = el('span', { class: 'num' });
   const marks = el('span', { class: 'pbar-legend num' }, t('hud.power.marks', { safe: formatWatts(w.circuitSafeWatts), trip: formatWatts(w.circuitWatts) }));
   const power = el(
@@ -174,7 +174,7 @@ export function mount(root: HTMLElement, deps: HudDeps): HudApi {
       tripMark.style.left = `${pb.tripPct.toFixed(1)}%`;
       power.dataset.zone = pb.zone;
       setText(watts, tripped ? t('hud.power.tripped') : formatWatts(s.power.watts));
-      setAttr(bar, 'aria-valuenow', String(Math.round(s.power.watts)));
+      setAttr(bar, 'aria-valuenow', String(pb.nowW));
       setAttr(bar, 'aria-valuetext', tripped ? t('hud.power.tripped') : formatWatts(s.power.watts));
       setAttr(power, 'title', t('hud.power.title', { w: formatWatts(s.power.watts), safe: formatWatts(w.circuitSafeWatts), trip: formatWatts(w.circuitWatts) }));
       setHidden(reset, !tripped);

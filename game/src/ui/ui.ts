@@ -47,6 +47,8 @@ export interface UiApi {
   confirm(o: ConfirmOptions): Promise<boolean>;
   /** Opens the seed-round offer if one is pending. */
   openRound(): void;
+  /** Another game is about to be shown (new game, import, resume): forget per-game UI memory (unread, offers shown). */
+  reset(): void;
 }
 
 const PANELS: { id: PanelId; key: TextKey }[] = [
@@ -141,6 +143,12 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
   let latest: GameState | null = null;
   /** offeredHour of the last offer opened automatically. */
   let shownOffer: number | null = null;
+  /** Game hour of the last update: going backwards means another game (restart or import). */
+  let lastHour = -1;
+  const resetGameMemory = (): void => {
+    shownOffer = null;
+    pulsoApi.reset();
+  };
 
   const focus = (f: NonNullable<PulsoItem['focus']>): void => {
     if (f.kind === 'gpu' && f.id) api.selectGpu(f.id, true);
@@ -198,6 +206,8 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
 
   const api: UiApi = {
     update(s) {
+      if (s.hour < lastHour) resetGameMemory();
+      lastHour = s.hour;
       hudApi.update(s);
       shopApi.update(s);
       allocApi.update(s);
@@ -206,6 +216,9 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
       refreshBadge();
       learnApi.notice(conceptsPresent(s, deps.data));
       latest = s;
+      // Tripped breaker: a status banner (the region is role=status), created anew on each trip so it is announced.
+      if (s.power.breakerTripped && s.outcome === null) banner('breaker', t('breaker.banner'), { tone: 'error' });
+      else api.clearBanner('breaker');
       // A game that just ended (e.g. bankrupt with an offer pending) leaves no decision open under the end screen.
       if (s.outcome !== null) root.querySelector<HTMLDialogElement>('dialog.round-offer[open]')?.close();
       // The investor just showed up: pause and show the offer once per offer (it stays reachable afterwards).
@@ -246,6 +259,10 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
       return confirmDialog(root, o);
     },
     openRound,
+    reset() {
+      lastHour = -1;
+      resetGameMemory();
+    },
   };
 
   function openRound(): void {

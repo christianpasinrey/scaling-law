@@ -109,6 +109,12 @@ describe('power bar zones', () => {
     expect(powerBar(NaN, w, false).pct).toBe(0);
     expect(powerBar(-5, w, false).pct).toBe(0);
   });
+  it('gives the meter its real span: max = trip × 1.15 and the reading clamped into 0..max', () => {
+    expect(powerBar(400, w, false).maxW).toBe(Math.round(1800 * 1.15));
+    expect(powerBar(400, w, false).nowW).toBe(400);
+    expect(powerBar(99999, w, false).nowW).toBe(Math.round(1800 * 1.15));
+    expect(powerBar(NaN, w, false).nowW).toBe(0);
+  });
 });
 
 describe('ledger balance', () => {
