@@ -85,8 +85,11 @@ export function applyCommand(s: GameState, d: GameData, c: Command): GameState {
       return { ...s, jobs: s.jobs.map((j) => (j.id === job.id ? { ...j, status: 'running' as const } : j)) };
     }
     case 'set_price': {
-      if (!Number.isFinite(c.usdPerMChars) || c.usdPerMChars <= 0) {
-        return warn(s, 'bad_price', 'El precio debe ser un número mayor que 0.');
+      const tr = d.products.translation;
+      const lo = tr.minPriceUsdPerMChars.value;
+      const hi = tr.maxPriceUsdPerMChars.value;
+      if (!Number.isFinite(c.usdPerMChars) || c.usdPerMChars < lo || c.usdPerMChars > hi) {
+        return warn(s, 'bad_price', `El precio debe estar entre ${lo} y ${hi} $ por millón de caracteres.`);
       }
       return { ...s, product: { ...s.product, priceUsdPerMChars: c.usdPerMChars } };
     }
