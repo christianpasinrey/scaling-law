@@ -6,9 +6,89 @@ export const STORE = 'saves';
 export const SLOT_KEY = 'slot-1';
 
 const HOURS_PER_WEEK = 168;
-const REQUIRED: readonly string[] = [
-  'version', 'seed', 'rng', 'hour', 'cashUsd', 'gpus', 'rigs', 'jobs', 'product', 'pulso', 'ledger',
-];
+
+// ---------------------------------------------------------------- shape validation (every non-optional GameState key)
+
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isInt = (v: unknown): v is number => Number.isInteger(v);
+const isStr = (v: unknown): v is string => typeof v === 'string';
+const isBool = (v: unknown): v is boolean => typeof v === 'boolean';
+const oneOf = (v: unknown, xs: readonly unknown[]): boolean => xs.includes(v);
+const arrayOf = (v: unknown, ok: (x: unknown) => boolean): boolean => Array.isArray(v) && v.every(ok);
+const recordOf = (v: unknown, ok: (x: unknown) => boolean): boolean => isObj(v) && Object.values(v).every(ok);
+
+const isRig = (v: unknown): boolean => isObj(v) && isStr(v.id) && oneOf(v.model, ['tower_2017', 'open_frame']);
+const isGpu = (v: unknown): boolean =>
+  isObj(v) && isStr(v.id) && isStr(v.model) && isStr(v.rigId) && isInt(v.slot) && isNum(v.tempC) && oneOf(v.perf, [0, 0.7, 1]);
+const isPower = (v: unknown): boolean => isObj(v) && isNum(v.watts) && isBool(v.breakerTripped) && isNum(v.weekKwh);
+const isJob = (v: unknown): boolean =>
+  isObj(v) &&
+  oneOf(v.id, ['replicate_paper', 'translation_v2']) &&
+  isNum(v.workP100h) &&
+  isNum(v.doneP100h) &&
+  isNum(v.checkpointP100h) &&
+  isInt(v.checkpointEveryH) &&
+  arrayOf(v.lossCurve, isNum) &&
+  oneOf(v.status, ['locked', 'ready', 'running', 'done']);
+const isProduct = (v: unknown): boolean =>
+  isObj(v) &&
+  isNum(v.priceUsdPerMChars) &&
+  isNum(v.customers) &&
+  isNum(v.demandMCharsH) &&
+  isNum(v.servedMCharsH) &&
+  isNum(v.latencyMs) &&
+  isNum(v.satisfaction) &&
+  isNum(v.weekServedMChars) &&
+  isBool(v.launched);
+const isContract = (v: unknown): boolean =>
+  isObj(v) && isStr(v.id) && isNum(v.usd) && isNum(v.weeksTotal) && isNum(v.weeksLeft) && oneOf(v.status, ['offered', 'active', 'done']);
+const isGrant = (v: unknown): boolean =>
+  isObj(v) && isStr(v.id) && isNum(v.p100eq) && isNum(v.hoursLeft) && isNum(v.weeksLeft) && oneOf(v.status, ['offered', 'active', 'expired']);
+const isLedgerWeek = (v: unknown): boolean =>
+  isObj(v) && isNum(v.week) && isNum(v.revenueUsd) && isNum(v.costsUsd) && isNum(v.cashEndUsd) && recordOf(v.lines, isNum);
+const isFocus = (v: unknown): boolean => isObj(v) && oneOf(v.kind, ['gpu', 'product', 'power']) && (v.id === undefined || isStr(v.id));
+const isPulsoItem = (v: unknown): boolean =>
+  isObj(v) &&
+  isStr(v.id) &&
+  isInt(v.hour) &&
+  oneOf(v.cause, ['latency', 'quality', 'price', 'outage', 'praise', 'news', 'warning']) &&
+  isStr(v.text) &&
+  isNum(v.count) &&
+  (v.focus === undefined || isFocus(v.focus));
+const isRound = (v: unknown): boolean =>
+  isObj(v) && oneOf(v.status, ['offered', 'declined']) && isInt(v.offeredHour) && (v.declinedHour === undefined || isInt(v.declinedHour));
+
+/** True when `o` has every non-optional GameState key with its type (and the optional ones, when present). */
+function isGameStateShape(o: Obj): boolean {
+  return (
+    isNum(o.seed) &&
+    isNum(o.rng) &&
+    isInt(o.hour) &&
+    (o.hour as number) >= 0 &&
+    isNum(o.cashUsd) &&
+    isStr(o.labName) &&
+    arrayOf(o.rigs, isRig) &&
+    arrayOf(o.gpus, isGpu) &&
+    recordOf(o.allocation, (a) => oneOf(a, ['train', 'serve', 'rent', 'idle'])) &&
+    isPower(o.power) &&
+    arrayOf(o.jobs, isJob) &&
+    isProduct(o.product) &&
+    arrayOf(o.contracts, isContract) &&
+    arrayOf(o.grants, isGrant) &&
+    isNum(o.reputation) &&
+    arrayOf(o.ledger, isLedgerWeek) &&
+    arrayOf(o.pulso, isPulsoItem) &&
+    recordOf(o.flags, isBool) &&
+    isNum(o.weekRentUsd) &&
+    isInt(o.negativeWeeks) &&
+    (o.outcome === null || oneOf(o.outcome, ['seed_round', 'bankrupt'])) &&
+    (o.round === undefined || isRound(o.round)) &&
+    (o.trainedGpuHours === undefined || isNum(o.trainedGpuHours)) &&
+    (o.pulsoDay === undefined || (isObj(o.pulsoDay) && isInt(o.pulsoDay.day) && isInt(o.pulsoDay.created)))
+  );
+}
 
 export type ImportResult = { ok: true; state: GameState } | { ok: false; reason: 'corrupt' | 'version' };
 /** 'none' = store readable and slot-1 empty; 'unavailable' = storage itself failed (never overwrite on this). */
@@ -19,7 +99,11 @@ export function shouldAutosave(prevHour: number, nextHour: number): boolean {
   return Math.floor(nextHour / HOURS_PER_WEEK) !== Math.floor(prevHour / HOURS_PER_WEEK);
 }
 
-/** Parses and validates serialized state. Never throws. */
+/**
+ * Parses and validates serialized state. Never throws.
+ * Order: JSON → an object with a numeric version → version (another version's shape may differ, so it is reported
+ * as 'version', not 'corrupt') → the full v1 shape.
+ */
 function parseSave(text: unknown): ImportResult {
   if (typeof text !== 'string') return { ok: false, reason: 'corrupt' };
   let raw: unknown;
@@ -28,16 +112,10 @@ function parseSave(text: unknown): ImportResult {
   } catch {
     return { ok: false, reason: 'corrupt' };
   }
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { ok: false, reason: 'corrupt' };
-  const o = raw as Record<string, unknown>;
-  if (REQUIRED.some((k) => !(k in o))) return { ok: false, reason: 'corrupt' };
-  const nums = ['version', 'seed', 'rng', 'hour', 'cashUsd'];
-  const arrays = ['gpus', 'rigs', 'jobs', 'pulso', 'ledger'];
-  if (nums.some((k) => typeof o[k] !== 'number' || !Number.isFinite(o[k]))) return { ok: false, reason: 'corrupt' };
-  if (arrays.some((k) => !Array.isArray(o[k]))) return { ok: false, reason: 'corrupt' };
-  if (typeof o.product !== 'object' || o.product === null || Array.isArray(o.product)) return { ok: false, reason: 'corrupt' };
-  if (o.version !== 1) return { ok: false, reason: 'version' };
-  return { ok: true, state: raw as GameState };
+  if (!isObj(raw) || !isNum(raw.version)) return { ok: false, reason: 'corrupt' };
+  if (raw.version !== 1) return { ok: false, reason: 'version' };
+  if (!isGameStateShape(raw)) return { ok: false, reason: 'corrupt' };
+  return { ok: true, state: raw as unknown as GameState };
 }
 
 function openDb(): Promise<IDBDatabase> {

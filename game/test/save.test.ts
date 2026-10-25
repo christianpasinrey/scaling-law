@@ -4,7 +4,7 @@ import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
-import { loadData, newGame } from '../src/sim';
+import { advance, applyCommand, loadData, newGame } from '../src/sim';
 import { DB_NAME, SLOT_KEY, STORE, exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave, startPolicy } from '../src/save';
 
 const d = loadData(structuredClone({ hardware, world, products, pulso }));
@@ -92,6 +92,70 @@ describe('storage failure and scalar validation', () => {
       await rawPut(JSON.stringify({ ...fresh(), ...patch }));
       expect(await loadGame(), JSON.stringify(patch)).toEqual({ ok: false, reason: 'corrupt' });
     }
+  });
+});
+
+describe('full shape validation', () => {
+  const without = (k: string): Record<string, unknown> => {
+    const o: Record<string, unknown> = { ...fresh() };
+    delete o[k];
+    return o;
+  };
+  const imp = (o: unknown) => importSave(new Blob([JSON.stringify(o)]));
+
+  it('missing power is rejected', async () => {
+    expect(await imp(without('power'))).toEqual({ ok: false, reason: 'corrupt' });
+  });
+  it('a non-integer hour is rejected', async () => {
+    expect(await imp({ ...fresh(), hour: 12.5 })).toEqual({ ok: false, reason: 'corrupt' });
+  });
+  it('missing flags is rejected', async () => {
+    expect(await imp(without('flags'))).toEqual({ ok: false, reason: 'corrupt' });
+  });
+  it('every non-optional key is required', async () => {
+    const keys = ['seed', 'rng', 'hour', 'cashUsd', 'labName', 'rigs', 'gpus', 'allocation', 'power', 'jobs', 'product',
+      'contracts', 'grants', 'reputation', 'ledger', 'pulso', 'flags', 'weekRentUsd', 'negativeWeeks', 'outcome'];
+    for (const k of keys) expect(await imp(without(k)), k).toEqual({ ok: false, reason: 'corrupt' });
+  });
+  it('rejects wrong field types and element shapes', async () => {
+    const s = fresh();
+    const bad: Record<string, unknown>[] = [
+      { labName: 7 },
+      { allocation: [] },
+      { allocation: { 'gpu-1': 'mine' } },
+      { flags: { model_v2: 'yes' } },
+      { power: { ...s.power, watts: 'x' } },
+      { power: { ...s.power, breakerTripped: 1 } },
+      { product: { ...s.product, launched: 'no' } },
+      { product: { ...s.product, customers: null } },
+      { gpus: [{ ...s.gpus[0]!, perf: 0.5 }] },
+      { gpus: [null] },
+      { rigs: [{ id: 'rig-1', model: 'shed' }] },
+      { jobs: [{ ...s.jobs[0]!, lossCurve: ['a'] }] },
+      { contracts: [{ id: 'c', usd: 1 }] },
+      { pulso: [{ id: 'p', hour: 1.5, cause: 'news', text: 't', count: 1 }] },
+      { reputation: '5' },
+      { negativeWeeks: 1.5 },
+      { weekRentUsd: null },
+      { outcome: 'won' },
+      { round: { status: 'offered' } },
+    ];
+    for (const patch of bad) expect(await imp({ ...s, ...patch }), JSON.stringify(patch)).toEqual({ ok: false, reason: 'corrupt' });
+  });
+  it('accepts optional fields when present and well-formed', async () => {
+    const s = { ...fresh(), round: { status: 'offered' as const, offeredHour: 100 }, trainedGpuHours: 4, pulsoDay: { day: 3, created: 1 } };
+    expect(await imp(s)).toEqual({ ok: true, state: s });
+  });
+  it('a played game (ledger, Pulso, jobs, allocation) round-trips', async () => {
+    let s = applyCommand(newGame(d, 7, 'Lab'), d, { t: 'start_job', jobId: 'replicate_paper' });
+    s = applyCommand(s, d, { t: 'allocate', gpuId: 'gpu-1', to: 'train' });
+    s = advance(s, d, 3 * 168 + 5);
+    expect(s.ledger.length).toBeGreaterThan(0);
+    expect(s.jobs.find((j) => j.id === 'replicate_paper')!.lossCurve.length).toBeGreaterThan(0);
+    expect(await imp(s)).toEqual({ ok: true, state: s });
+  });
+  it('another version is reported as version even if its shape differs', async () => {
+    expect(await imp({ version: 2, somethingNew: true })).toEqual({ ok: false, reason: 'version' });
   });
 });
 
