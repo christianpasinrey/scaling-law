@@ -14,6 +14,8 @@ export interface SceneCtx {
   readonly reducedMotion: boolean;
   /** Registers a per-frame callback; returns its unsubscribe. */
   onFrame(fn: FrameFn): () => void;
+  /** Registers a callback run right after the garage is rendered (overlays such as the brain); returns its unsubscribe. */
+  onAfterRender(fn: FrameFn): () => void;
   dispose(): void;
 }
 
@@ -80,6 +82,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneCtx {
 
   // Array, not Set: iterating it every frame must not allocate an iterator.
   const frameFns: FrameFn[] = [];
+  const afterFns: FrameFn[] = [];
   const offset = new Vector3();
   let last = -1;
   let time = 0;
@@ -104,7 +107,16 @@ export function createScene(canvas: HTMLCanvasElement): SceneCtx {
     controls.update();
     for (let i = 0; i < frameFns.length; i++) frameFns[i]!(dt, time);
     renderer.render(scene, camera);
+    for (let i = 0; i < afterFns.length; i++) afterFns[i]!(dt, time);
   });
+
+  const subscribe = (list: FrameFn[], fn: FrameFn): (() => void) => {
+    list.push(fn);
+    return () => {
+      const i = list.indexOf(fn);
+      if (i >= 0) list.splice(i, 1);
+    };
+  };
 
   return {
     renderer,
@@ -113,13 +125,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneCtx {
     controls,
     canvas,
     reducedMotion,
-    onFrame(fn) {
-      frameFns.push(fn);
-      return () => {
-        const i = frameFns.indexOf(fn);
-        if (i >= 0) frameFns.splice(i, 1);
-      };
-    },
+    onFrame: (fn) => subscribe(frameFns, fn),
+    onAfterRender: (fn) => subscribe(afterFns, fn),
     dispose() {
       renderer.setAnimationLoop(null);
       ro.disconnect();
@@ -127,6 +134,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneCtx {
       controls.dispose();
       envRT.dispose();
       frameFns.length = 0;
+      afterFns.length = 0;
       renderer.dispose();
     },
   };

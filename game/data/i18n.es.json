@@ -1,0 +1,23 @@
+{
+  "brain.title": "Cerebro",
+  "brain.mode.training": "entrenando",
+  "brain.mode.inference": "sirviendo",
+  "brain.mode.idle": "en reposo",
+  "brain.hint.pip": "[b] ampliar",
+  "brain.hint.expanded": "[b] o Esc: cerrar · clic en un bloque para saber qué hace",
+  "brain.node.embed_in": "Embedding de entrada",
+  "brain.node.embed_out": "Embedding de salida",
+  "brain.node.enc": "Codificador · 6 capas",
+  "brain.node.dec": "Decodificador · 6 capas",
+  "brain.node.head": "Linear + Softmax",
+  "brain.split": "Paralelismo de pipeline (simplificado): cada GPU ejecuta un tramo de capas consecutivas.",
+  "brain.explain.training": "Entrenamiento: la ola sube (pasada hacia delante) y vuelve (retropropagación).",
+  "brain.explain.inference": "Inferencia: cada pulso es trabajo de traducción subiendo por el modelo; más caracteres servidos, más pulsos.",
+  "brain.explain.idle": "Sin entrenamiento ni clientes: el modelo está en reposo.",
+  "brain.noGpu": "Ninguna GPU asignada",
+  "brain.gpu": "GPU",
+  "brain.state.throttled": "throttling",
+  "brain.state.off": "apagada",
+  "brain.loss": "loss",
+  "brain.loss.note": "curva didáctica, no datos del paper"
+}
