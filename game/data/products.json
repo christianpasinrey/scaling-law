@@ -1,0 +1,197 @@
+{
+  "translation": {
+    "defaultPriceUsdPerMChars": {
+      "value": 20,
+      "source": "Public translation API rates 2017 (Google Cloud Translation: $20 per million characters)",
+      "approx": true
+    },
+    "seedCustomers": {
+      "value": 20,
+      "source": "Game-design estimate: first customers that sign up on launch day",
+      "approx": true
+    },
+    "demandMCharsPerCustomerH": {
+      "value": 0.05,
+      "source": "Game-design estimate: 50,000 characters per customer per hour (about 1.2 M characters per customer per day)",
+      "approx": true
+    },
+    "capacityMCharsPerP100eqH": {
+      "value": 40,
+      "source": "Game-design estimate: approx. NMT translation throughput on one P100-class GPU in 2017, in million characters per hour",
+      "approx": true
+    },
+    "baseLatencyMs": {
+      "value": 300,
+      "source": "Game-design estimate: latency of an unsaturated 2017 NMT translation request",
+      "approx": true
+    },
+    "maxLatencyMs": {
+      "value": 30000,
+      "source": "Game-design choice: latency cap when the service is saturated or has no capacity",
+      "approx": true
+    },
+    "qualityBase": {
+      "value": 0.6,
+      "source": "Game-design estimate: perceived quality of the first (paper replication) model, 0..1",
+      "approx": true
+    },
+    "qualityModelV2": {
+      "value": 0.8,
+      "source": "Game-design estimate: perceived quality once the larger translation v2 model ships, 0..1",
+      "approx": true
+    },
+    "weeklyGrowth": {
+      "value": 0.1,
+      "source": "Game-design estimate: weekly customer growth at full satisfaction at the reference price — ajuste de diseño (T15): 0.03→0.1, at 0.03 the customer base grew under 2 %/week with v2 and the seed round (300 customers) never came within 120 weeks; 10 %/week at full satisfaction gives 6 %/week at v2 quality (0.8), within the 5–7 %/week Paul Graham calls good for a startup ('Startup = Growth', 2012), so 20→300 customers takes about 46 weeks",
+      "approx": true
+    },
+    "elasticityExponent": {
+      "value": 1.3,
+      "source": "Game-design estimate: price elasticity of customer growth (ruling R22): with growing demand (satisfaction > 0.5) the factor is (reference price / price)^exponent, with shrinking demand (price / reference price)^exponent, so a high price speeds up losses and a low price slows them",
+      "approx": true
+    },
+    "maxElasticityFactor": {
+      "value": 2,
+      "source": "Game-design estimate: cap on (reference price / price)^exponent so very cheap prices cannot explode growth — ajuste de diseño (T15): 4→2, with the faster base growth a ×4 cap let a rock-bottom price reach 300 customers in about 13 weeks; ×2 keeps the fastest price-cutting route above 20 weeks",
+      "approx": true
+    },
+    "maxWeeklyGrowthAbs": {
+      "value": 0.5,
+      "source": "Game-design estimate: weekly customer growth/decline is clamped to +/-50 % so customers never go negative or explode",
+      "approx": true
+    },
+    "minPriceUsdPerMChars": {
+      "value": 1,
+      "source": "Game-design estimate: lowest legal price per million characters",
+      "approx": true
+    },
+    "maxPriceUsdPerMChars": {
+      "value": 200,
+      "source": "Game-design estimate: highest legal price per million characters",
+      "approx": true
+    }
+  },
+  "jobs": {
+    "replicate_paper": {
+      "workP100h": {
+        "value": 96,
+        "source": "https://arxiv.org/abs/1706.03762 §5.2: base model, 8 P100 x 12 h = 96 P100-hours",
+        "approx": false
+      }
+    },
+    "translation_v2": {
+      "workP100h": {
+        "value": 400,
+        "source": "Game-design estimate: a larger production translation model, about 4x the base paper model",
+        "approx": true
+      }
+    },
+    "checkpointEveryH": {
+      "value": 4,
+      "source": "Game-design choice: a checkpoint every 4 hours",
+      "approx": true
+    }
+  },
+  "training": {
+    "researchContractFactor": {
+      "value": 0.5,
+      "source": "Game-design choice: an active research contract takes half of the lab's own GPU time",
+      "approx": true
+    },
+    "loss": {
+      "start": {
+        "value": 9,
+        "source": "Didactic curve shape, not paper data: loss span above the floor at 0 % progress",
+        "approx": true
+      },
+      "exponent": {
+        "value": 1.6,
+        "source": "Didactic curve shape, not paper data: how fast the loss falls",
+        "approx": true
+      },
+      "floor": {
+        "value": 1.8,
+        "source": "Didactic curve shape, not paper data: loss at 100 % progress",
+        "approx": true
+      }
+    }
+  },
+  "economy": {
+    "consulting": {
+      "everyWeeks": {
+        "value": 4,
+        "source": "Game-design choice: consulting offers arrive every 4 weeks",
+        "approx": true
+      },
+      "maxOffers": {
+        "value": 2,
+        "source": "Game-design choice: 0 to 2 offers per round",
+        "approx": true
+      },
+      "usdMin": {
+        "value": 3000,
+        "source": "Game-design choice: smallest consulting gig for a 2017 AI lab",
+        "approx": true
+      },
+      "usdMax": {
+        "value": 12000,
+        "source": "Game-design choice: largest consulting gig for a 2017 AI lab",
+        "approx": true
+      },
+      "usdStep": {
+        "value": 100,
+        "source": "Game-design choice: gig values are rounded to this step",
+        "approx": true
+      },
+      "weeksMin": {
+        "value": 2,
+        "source": "Game-design choice: shortest gig, in weeks",
+        "approx": true
+      },
+      "weeksMax": {
+        "value": 6,
+        "source": "Game-design choice: longest gig, in weeks",
+        "approx": true
+      }
+    },
+    "grant": {
+      "minReputation": {
+        "value": 15,
+        "source": "Game-design choice: reputation needed before a compute grant is offered",
+        "approx": true
+      },
+      "p100eq": {
+        "value": 2.5,
+        "source": "Game-design choice: 500 cloud V100 hours modelled as 2.5 P100-equivalents of virtual GPU",
+        "approx": true
+      },
+      "hours": {
+        "value": 500,
+        "source": "Game-design choice: cloud V100 hours granted",
+        "approx": true
+      },
+      "weeks": {
+        "value": 8,
+        "source": "Game-design choice: weeks the grant stays open once accepted",
+        "approx": true
+      }
+    },
+    "bankruptcyNegativeWeeks": {
+      "value": 4,
+      "source": "Game-design choice: consecutive weekly settlements ending with negative cash before bankruptcy",
+      "approx": true
+    },
+    "reputation": {
+      "replicatePaper": {
+        "value": 15,
+        "source": "Game-design choice: reputation reward for replicating the paper",
+        "approx": true
+      },
+      "translationV2": {
+        "value": 15,
+        "source": "Game-design choice: reputation reward for the translation v2 model — ajuste de diseño (T15): 10→15, ruling R24: replicate (15) + v2 must reach seedMinReputation (30), otherwise the seed round is unreachable",
+        "approx": true
+      }
+    }
+  }
+}
