@@ -1,5 +1,6 @@
 import { Color, Mesh, MeshStandardMaterial, ShaderMaterial, Vector2 } from 'three';
 import type { Material, Object3D } from 'three';
+import { flowPhaseStep } from './motion';
 
 /** What a flow mesh carries (glTF extra `flow_kind`). */
 export type FlowKind = 'power' | 'data';
@@ -114,9 +115,11 @@ function makeMaterial(base: Color, uStart: number, uEnd: number): ShaderMaterial
 /**
  * Replaces the material of every mesh under `root` that carries the glTF extras
  * flow_u_start / flow_u_end (UV u = metres along the path) with an animated pulse shader.
- * Pulse speed ∝ watts reported by `getRate`; colour by mode and kind.
+ * Pulse speed ∝ watts reported by `getRate`; colour by mode and kind. With `reducedMotion`
+ * the dashes are static (brightness, colour and on/off still show the state).
  */
-export function applyFlowMaterials(root: Object3D, getRate: FlowRate): FlowSet {
+export function applyFlowMaterials(root: Object3D, getRate: FlowRate, opts: { reducedMotion?: boolean } = {}): FlowSet {
+  const reduced = opts.reducedMotion === true;
   const states: LineState[] = [];
   root.traverse((o) => {
     if (!(o instanceof Mesh)) return;
@@ -163,7 +166,7 @@ export function applyFlowMaterials(root: Object3D, getRate: FlowRate): FlowSet {
             level = Math.min(0.35 + (0.65 * w) / REF_WATTS, 1.6);
           }
         }
-        st.phase = (st.phase + speed * dt) % DASH_SPACING_M;
+        st.phase = flowPhaseStep(st.phase, speed, dt, DASH_SPACING_M, reduced);
         u.uPhase!.value = st.phase;
         u.uLevel!.value = level;
       }

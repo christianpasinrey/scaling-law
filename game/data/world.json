@@ -3,6 +3,11 @@
   "startCashUsd": 10000,
   "circuitWatts": 1800,
   "circuitSafeWatts": 1440,
+  "pcieSlotWatts": {
+    "value": 75,
+    "source": "PCI Express Card Electromechanical (CEM) Specification: a x16 graphics slot supplies at most 75 W; https://en.wikipedia.org/wiki/PCI_Express#Power",
+    "approx": false
+  },
   "ambientC": {
     "value": 25,
     "source": "approx. game-design estimate: June garage ambient temperature",

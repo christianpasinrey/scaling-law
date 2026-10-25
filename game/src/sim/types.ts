@@ -42,6 +42,8 @@ export interface WorldData {
   startCashUsd: 10000;
   circuitWatts: 1800;
   circuitSafeWatts: 1440;
+  /** Max power a PCIe x16 slot (or a riser feeding it) delivers to a card (CEM spec); the rest comes over the card's own cable. */
+  pcieSlotWatts: Sourced<number>;
   /** Garage ambient temperature; initial GPU temperature. */
   ambientC: Sourced<number>;
   electricityUsdPerKwh: Sourced<number>;

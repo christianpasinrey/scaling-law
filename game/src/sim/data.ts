@@ -92,6 +92,7 @@ function world(v: unknown, path: string): WorldData {
       maxTickMs: sourced(clock.maxTickMs, `${path}.clock.maxTickMs`),
     },
     circuitSafeWatts: exact(o.circuitSafeWatts, 1440, `${path}.circuitSafeWatts`),
+    pcieSlotWatts: sourced(o.pcieSlotWatts, `${path}.pcieSlotWatts`),
     ambientC: sourced(o.ambientC, `${path}.ambientC`),
     electricityUsdPerKwh: sourced(o.electricityUsdPerKwh, `${path}.electricityUsdPerKwh`),
     failPerGpuDay: sourced(o.failPerGpuDay, `${path}.failPerGpuDay`),

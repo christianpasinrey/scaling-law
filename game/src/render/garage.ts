@@ -26,6 +26,7 @@ import type { GameData, GameState, OwnedGpu, RigModel } from '../sim/types';
 import { applyFlowMaterials } from './flow';
 import type { FlowMode, FlowSet } from './flow';
 import type { SceneCtx } from './scene';
+import { hddLedOn } from './motion';
 import { slotFor } from './slots';
 
 export interface GpuSelection {
@@ -50,8 +51,6 @@ const TOWER_SPOTS: readonly Vector3[] = [new Vector3(-0.35, 0, -2.05), new Vecto
 const FRAME_SPOTS: readonly Vector3[] = [new Vector3(0.5, TABLE_H, -1.95), new Vector3(1.35, 0, -1.6), new Vector3(1.35, 0, -0.8)];
 const WALL_SOCKET = new Vector3(-1.1, 0.32, BACK_Z + 0.012);
 const STRIP_POS = new Vector3(-0.85, 0.022, -2.3);
-/** PCIe slot power delivered through each riser of the open frame; the rest of the card's draw goes over its own cable. */
-const PCIE_SLOT_WATTS = 75;
 const CLICK_MAX_PX = 5;
 const CASE_LIGHT_INTENSITY = 0.35;
 
@@ -191,11 +190,13 @@ export class GarageView {
   private data: GameData | null = null;
   private mode: FlowMode = 'normal';
   private disposed = false;
+  private readonly flowOpts: { reducedMotion: boolean };
   private readonly offFrame: () => void;
 
   constructor(ctx: SceneCtx, assetBase: string = import.meta.env.BASE_URL + 'assets/') {
     this.ctx = ctx;
     this.assetBase = assetBase;
+    this.flowOpts = { reducedMotion: ctx.reducedMotion };
     this.world.name = 'Garage';
     ctx.scene.add(this.world);
     this.buildRoom();
@@ -306,7 +307,7 @@ export class GarageView {
     root.updateMatrixWorld(true);
 
     const rates = new Map<string, number>();
-    const flow = applyFlowMaterials(root, (line) => rates.get(line.name) ?? 0);
+    const flow = applyFlowMaterials(root, (line) => rates.get(line.name) ?? 0, this.flowOpts);
 
     const green = new Color(0x2bff5a);
     const blue = new Color(0x3a7bff);
@@ -429,8 +430,11 @@ export class GarageView {
         const w = (model?.watts.value ?? 0) * gpuLoad(s, g);
         rigWatts += w;
         if (rig.model.id === 'open_frame') {
-          r.set(`Cable_Riser_${g.slot}`, Math.min(w, PCIE_SLOT_WATTS));
-          r.set(`Cable_GPU_${g.slot}`, Math.max(w - PCIE_SLOT_WATTS, 0));
+          // A x16 slot (here the riser feeding it) supplies at most 75 W (PCIe CEM spec,
+          // world.pcieSlotWatts); the rest of the card's draw comes over its own PCIe power cable.
+          const slotW = d.world.pcieSlotWatts.value;
+          r.set(`Cable_Riser_${g.slot}`, Math.min(w, slotW));
+          r.set(`Cable_GPU_${g.slot}`, Math.max(w - slotW, 0));
         } else {
           r.set(`Cable_GPU_${g.slot}`, w);
         }
@@ -470,9 +474,8 @@ export class GarageView {
       rig.flow.tick(dt);
       rig.cord?.flow.tick(dt);
       if (rig.hddActive) {
-        // Irregular disk-activity flicker from two incommensurate sines.
-        const n = Math.sin(t * 37.0) + Math.sin(t * 23.3 + 1.7);
-        setLed(rig.ledHdd, n > 0.2, 0.6 + 0.4 * Math.abs(Math.sin(t * 11.0)));
+        const reduced = this.ctx.reducedMotion;
+        setLed(rig.ledHdd, hddLedOn(t, true, reduced), reduced ? 0.8 : 0.6 + 0.4 * Math.abs(Math.sin(t * 11.0)));
       }
     }
   }
@@ -608,7 +611,7 @@ export class GarageView {
       new Vector3(STRIP_POS.x - 0.19, 0.012, STRIP_POS.z),
     ]);
     w.add(wall.mesh);
-    this.wallCord = { watts: 0, flow: applyFlowMaterials(wall.mesh, () => this.wallCord?.watts ?? 0) };
+    this.wallCord = { watts: 0, flow: applyFlowMaterials(wall.mesh, () => this.wallCord?.watts ?? 0, this.flowOpts) };
   }
 
   /** A cable built like the GLB ones: UV u = metres along the path, flow extras set. */
@@ -649,7 +652,7 @@ export class GarageView {
     ];
     const cord = this.cordMesh(pts);
     this.world.add(cord.mesh);
-    const flow = applyFlowMaterials(cord.mesh, () => rig.cordWatts);
+    const flow = applyFlowMaterials(cord.mesh, () => rig.cordWatts, this.flowOpts);
     flow.setMode(this.mode);
     return { mesh: cord.mesh, flow, geometry: cord.geometry };
   }
