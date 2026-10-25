@@ -20,6 +20,7 @@ import {
   jobEtaHours,
   lastWeekBalance,
   lossPolyline,
+  parsePriceInput,
   powerBar,
   powerZone,
   pulsoNewestFirst,
@@ -238,5 +239,19 @@ describe('pulso and concepts', () => {
     expect(brainCard('enc_3')).toBe('encoder');
     expect(brainCard('dec_0')).toBe('decoder');
     expect(brainCard('head')).toBe('softmax');
+  });
+});
+
+describe('parsePriceInput', () => {
+  it('reads dot or comma decimals', () => {
+    expect(parsePriceInput('20')).toBe(20);
+    expect(parsePriceInput(' 12,5 ')).toBe(12.5);
+    expect(parsePriceInput('7.25')).toBe(7.25);
+  });
+  it('returns null for empty or non-numeric input, so no set_price is sent', () => {
+    expect(parsePriceInput('')).toBeNull();
+    expect(parsePriceInput('   ')).toBeNull();
+    expect(parsePriceInput('abc')).toBeNull();
+    expect(parsePriceInput('1,2,3')).toBeNull();
   });
 });

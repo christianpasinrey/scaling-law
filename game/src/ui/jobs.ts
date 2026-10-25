@@ -3,7 +3,7 @@
 import type { GameState, TrainingJob } from '../sim';
 import { el, learnButton, sectionHead, setAttr, setHidden, setText } from './dom';
 import type { PanelDeps } from './dom';
-import { formatDecimal, formatHours, formatInt, formatUsd, fraction, jobEtaHours, lossPolyline, t, trainingRate, weeklyRevenueEstimate } from './format';
+import { formatDecimal, formatHours, parsePriceInput, formatInt, formatUsd, fraction, jobEtaHours, lossPolyline, t, trainingRate, weeklyRevenueEstimate } from './format';
 
 export interface JobsApi {
   update(s: GameState): void;
@@ -107,7 +107,13 @@ export function mount(root: HTMLElement, deps: PanelDeps, openRound: () => void)
   const priceForm = el('form', { class: 'price-form' }, el('label', { for: priceId }, t('jobs.product.price')), el('div', { class: 'row' }, priceInput, applyBtn));
   let editing = false;
   const apply = (): void => {
-    const v = Number(priceInput.value.replace(',', '.'));
+    const v = parsePriceInput(priceInput.value);
+    if (v === null) {
+      // Empty or not a number: nothing is sent; the field says so and keeps the draft.
+      priceInput.setAttribute('aria-invalid', 'true');
+      return;
+    }
+    priceInput.removeAttribute('aria-invalid');
     deps.send({ t: 'set_price', usdPerMChars: v });
     editing = false;
   };
@@ -117,10 +123,14 @@ export function mount(root: HTMLElement, deps: PanelDeps, openRound: () => void)
   });
   priceInput.addEventListener('input', () => {
     editing = true;
+    priceInput.removeAttribute('aria-invalid');
   });
   // Leaving the field without applying drops the draft: the next state shows the real price again.
   priceInput.addEventListener('blur', (e) => {
-    if (e.relatedTarget !== applyBtn) editing = false; // moving to «Aplicar» keeps the draft until it submits
+    if (e.relatedTarget !== applyBtn) {
+      editing = false; // moving to «Aplicar» keeps the draft until it submits
+      priceInput.removeAttribute('aria-invalid'); // the real price comes back with the next state
+    }
   });
   const effect = el(
     'p',

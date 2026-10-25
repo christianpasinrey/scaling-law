@@ -14,6 +14,14 @@ export function t(k: TextKey, vars?: Record<string, string | number>): string {
 
 const MINUS = '−';
 
+/** The price typed by the player (comma or dot decimals), or null when it is empty or not a number. */
+export function parsePriceInput(raw: string): number | null {
+  const txt = raw.trim().replace(',', '.');
+  if (txt === '') return null;
+  const v = Number(txt);
+  return Number.isFinite(v) ? v : null;
+}
+
 /** Integer with Spanish thousands dots, always grouped (1.440, 10.000); negatives use a real minus sign. */
 export function formatInt(n: number): string {
   if (!Number.isFinite(n)) return '—';
