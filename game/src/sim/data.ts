@@ -162,6 +162,15 @@ function products(v: unknown, path: string): ProductsData {
     economy: economy(o.economy, `${path}.economy`),
     translation: {
       defaultPriceUsdPerMChars: sourced(tr.defaultPriceUsdPerMChars, `${path}.translation.defaultPriceUsdPerMChars`),
+      seedCustomers: sourced(tr.seedCustomers, `${path}.translation.seedCustomers`),
+      demandMCharsPerCustomerH: sourced(tr.demandMCharsPerCustomerH, `${path}.translation.demandMCharsPerCustomerH`),
+      capacityMCharsPerP100eqH: sourced(tr.capacityMCharsPerP100eqH, `${path}.translation.capacityMCharsPerP100eqH`),
+      baseLatencyMs: sourced(tr.baseLatencyMs, `${path}.translation.baseLatencyMs`),
+      maxLatencyMs: sourced(tr.maxLatencyMs, `${path}.translation.maxLatencyMs`),
+      qualityBase: sourced(tr.qualityBase, `${path}.translation.qualityBase`),
+      qualityModelV2: sourced(tr.qualityModelV2, `${path}.translation.qualityModelV2`),
+      weeklyGrowth: sourced(tr.weeklyGrowth, `${path}.translation.weeklyGrowth`),
+      elasticityExponent: sourced(tr.elasticityExponent, `${path}.translation.elasticityExponent`),
     },
     jobs: {
       replicate_paper: job('replicate_paper'),

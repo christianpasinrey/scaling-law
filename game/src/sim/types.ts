@@ -79,6 +79,19 @@ export interface WorldData {
 
 export interface TranslationProductData {
   defaultPriceUsdPerMChars: Sourced<number>;
+  /** Customers seeded on the first launched hour. */
+  seedCustomers: Sourced<number>;
+  /** M characters demanded per customer per hour. */
+  demandMCharsPerCustomerH: Sourced<number>;
+  /** M characters served per hour by one P100-equivalent. */
+  capacityMCharsPerP100eqH: Sourced<number>;
+  baseLatencyMs: Sourced<number>;
+  maxLatencyMs: Sourced<number>;
+  qualityBase: Sourced<number>;
+  qualityModelV2: Sourced<number>;
+  /** Weekly customer growth at satisfaction 1 and the reference price. */
+  weeklyGrowth: Sourced<number>;
+  elasticityExponent: Sourced<number>;
 }
 
 export interface JobData {
