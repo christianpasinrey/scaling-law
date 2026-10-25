@@ -15,10 +15,14 @@ export function stepRental(s: GameState, d: GameData): GameState {
   if (s.power.breakerTripped) return s;
   const renting = s.gpus.filter((g) => s.allocation[g.id] === 'rent' && g.perf > 0).length;
   if (renting === 0) return s;
-  const r = d.world.rentalUsdPerDay;
-  // The boom lasts through boomEndIso (a calendar day) inclusive: compare the UTC date part.
-  const perDay = dateOf(s).slice(0, 10) <= r.boomEndIso.slice(0, 10) ? r.boom.value : r.after.value;
+  const perDay = rentalUsdPerDayAt(s, d);
   return { ...s, weekRentUsd: s.weekRentUsd + (renting * perDay) / HOURS_PER_DAY };
+}
+
+/** Rental rate per GPU per day at the state's date. The boom lasts through boomEndIso (a calendar day) inclusive. */
+export function rentalUsdPerDayAt(s: GameState, d: GameData): number {
+  const r = d.world.rentalUsdPerDay;
+  return dateOf(s).slice(0, 10) <= r.boomEndIso.slice(0, 10) ? r.boom.value : r.after.value;
 }
 
 /**

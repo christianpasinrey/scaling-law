@@ -1,6 +1,6 @@
 // Asignación: per GPU, what it does (train / serve / rent / idle), with temperature and performance factor.
 import type { Alloc, GameState } from '../sim';
-import { dateOf } from '../sim/time';
+import { rentalUsdPerDayAt } from '../sim/economy';
 import { GPU_PALETTE } from '../render/brain';
 import { el, learnButton, setAttr, setHidden, setText } from './dom';
 import type { FocusDeps, PanelDeps } from './dom';
@@ -110,7 +110,7 @@ export function mount(root: HTMLElement, deps: PanelDeps & Pick<FocusDeps, 'sele
       setText(hintServe, s.product.launched ? '' : t('alloc.hint.serve'));
       setHidden(hintServe.parentElement as HTMLElement, s.product.launched);
       const rent = d.world.rentalUsdPerDay;
-      const perDay = dateOf(s).slice(0, 10) <= rent.boomEndIso.slice(0, 10) ? rent.boom.value : rent.after.value;
+      const perDay = rentalUsdPerDayAt(s, d);
       setText(hintRent, t('alloc.hint.rent', { usd: formatDecimal(perDay, 0) }) + (rent.boom.approx ? ` (${t('ui.aprox')})` : ''));
     },
     select(id, focus = false) {
