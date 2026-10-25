@@ -41,8 +41,8 @@
       "approx": true
     },
     "weeklyGrowth": {
-      "value": 0.03,
-      "source": "Game-design estimate: weekly customer growth at full satisfaction at the reference price",
+      "value": 0.1,
+      "source": "Game-design estimate: weekly customer growth at full satisfaction at the reference price — ajuste de diseño (T15): 0.03→0.1, at 0.03 the customer base grew under 2 %/week with v2 and the seed round (300 customers) never came within 120 weeks; 10 %/week at full satisfaction gives 6 %/week at v2 quality (0.8), within the 5–7 %/week Paul Graham calls good for a startup ('Startup = Growth', 2012), so 20→300 customers takes about 46 weeks",
       "approx": true
     },
     "elasticityExponent": {
@@ -51,8 +51,8 @@
       "approx": true
     },
     "maxElasticityFactor": {
-      "value": 4,
-      "source": "Game-design estimate: cap on (reference price / price)^exponent so very cheap prices cannot explode growth",
+      "value": 2,
+      "source": "Game-design estimate: cap on (reference price / price)^exponent so very cheap prices cannot explode growth — ajuste de diseño (T15): 4→2, with the faster base growth a ×4 cap let a rock-bottom price reach 300 customers in about 13 weeks; ×2 keeps the fastest price-cutting route above 20 weeks",
       "approx": true
     },
     "maxWeeklyGrowthAbs": {
@@ -188,8 +188,8 @@
         "approx": true
       },
       "translationV2": {
-        "value": 10,
-        "source": "Game-design choice: reputation reward for the translation v2 model",
+        "value": 15,
+        "source": "Game-design choice: reputation reward for the translation v2 model — ajuste de diseño (T15): 10→15, ruling R24: replicate (15) + v2 must reach seedMinReputation (30), otherwise the seed round is unreachable",
         "approx": true
       }
     }

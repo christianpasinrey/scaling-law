@@ -109,12 +109,12 @@ describe('stepServing', () => {
     expect(bad.product.customers).toBeGreaterThanOrEqual(0);
   });
 
-  it('weeklyGrowth at reference price and full satisfaction is 3 % per week', () => {
+  it('weeklyGrowth at reference price and full satisfaction is 10 % per week', () => {
     const s = serving(2, 1000);
     let cur: GameState = { ...s, flags: { ...s.flags, model_v2: true } };
     for (let i = 0; i < 168; i++) cur = stepServing(cur, d, rng);
-    // satisfaction 0.8 -> g = 0.03 * 0.6
-    expect(cur.product.customers).toBeCloseTo(1000 * (1 + 0.03 * 0.6), 6);
+    // satisfaction 0.8 -> g = 0.1 * 0.6
+    expect(cur.product.customers).toBeCloseTo(1000 * (1 + 0.1 * 0.6), 6);
   });
 });
 

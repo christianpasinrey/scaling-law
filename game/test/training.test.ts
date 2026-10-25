@@ -172,13 +172,13 @@ describe('completion', () => {
     expect(job(s, 'translation_v2').status).toBe('ready');
     expect(s.product.launched).toBe(true);
   });
-  it('translation_v2: +10 reputation and the model_v2 flag', () => {
+  it('translation_v2: +15 reputation and the model_v2 flag', () => {
     let s = training(2);
     s = advance(s, dNoFail, 60);
     s = { ...s, jobs: s.jobs.map((j) => (j.id === 'translation_v2' ? { ...j, status: 'running' as const } : j)) };
     s = advance(s, dNoFail, 250);
     expect(job(s, 'translation_v2').status).toBe('done');
-    expect(s.reputation).toBe(25);
+    expect(s.reputation).toBe(30);
     expect(s.flags.model_v2).toBe(true);
   });
 });

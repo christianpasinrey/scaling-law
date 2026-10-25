@@ -233,10 +233,10 @@ describe('ledger', () => {
     };
     const s = settleWeek(s0, d, restoreRng(1));
     const e = s.ledger[0]!;
-    expect(e.lines).toMatchObject({ product: 200, consulting: 2000, rental: 28, electricity: 13 });
+    expect(e.lines).toMatchObject({ product: 200, consulting: 2000, rental: 28, electricity: 35 });
     expect(e.revenueUsd).toBe(2228);
-    expect(e.costsUsd).toBe(13);
+    expect(e.costsUsd).toBeCloseTo(35, 8);
     expect(e.cashEndUsd).toBeCloseTo(s.cashUsd, 8);
-    expect(s.cashUsd).toBeCloseTo(10000 + 2228 - 13, 8);
+    expect(s.cashUsd).toBeCloseTo(10000 + 2228 - 35, 8);
   });
 });

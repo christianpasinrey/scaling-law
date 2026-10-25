@@ -124,9 +124,9 @@ describe('energy cost', () => {
     const s = advance(s0, d, 168);
     const entry = s.ledger[0]!;
     const kwh = (168 * 650) / 1000;
-    expect(entry.lines.electricity).toBeCloseTo(kwh * 0.13, 6);
-    expect(entry.costsUsd).toBeCloseTo(kwh * 0.13, 6);
-    expect(s.cashUsd).toBeCloseTo(10000 - kwh * 0.13, 6);
+    expect(entry.lines.electricity).toBeCloseTo(kwh * 0.35, 6);
+    expect(entry.costsUsd).toBeCloseTo(kwh * 0.35, 6);
+    expect(s.cashUsd).toBeCloseTo(10000 - kwh * 0.35, 6);
     expect(entry.cashEndUsd).toBeCloseTo(s.cashUsd, 6);
     expect(s.power.weekKwh).toBe(0);
   });

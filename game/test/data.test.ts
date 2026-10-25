@@ -69,7 +69,7 @@ describe('loadData', () => {
     expect(w.circuitWatts).toBe(1800);
     expect(w.circuitSafeWatts).toBe(1440);
     expect(w.pcieSlotWatts.value).toBe(75);
-    expect(w.electricityUsdPerKwh.value).toBe(0.13);
+    expect(w.electricityUsdPerKwh.value).toBe(0.35); // T15 balance: 0.13 → 0.35
     expect(w.failPerGpuDay.value).toBeCloseTo(4.7e-4 * 3, 10);
     expect(w.throttle.throttleC.value).toBe(84);
     expect(w.throttle.throttleFactor.value).toBe(0.7);

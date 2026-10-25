@@ -8,7 +8,32 @@ coolant flowing.
 The goal is realism you can learn from: every piece of hardware is modelled from real photos and spec
 sheets, and every number in the simulation comes from the real industry.
 
-> Status: 3D asset production. The game itself (Three.js) has not started yet.
+> Status: milestone M1 ("garaje jugable") is playable in the browser: the 2017–2018 garage, from the
+> Transformer paper to a seed round or bankruptcy. 3D assets for the later eras are still in production.
+
+## Jugar
+
+Play it at **https://christianpasinrey.github.io/scaling-law/** (any modern browser with WebGL).
+
+Run it locally (Node 22, as in CI):
+
+```
+cd game && npm install && npm run dev
+```
+
+Run the tests (simulation, balance, save, bridge and UI helpers):
+
+```
+cd game && npm test
+```
+
+M1 covers the garage years, June 2017 to 2018. The game opens on the day the Transformer paper
+(arXiv 1706.03762) is published and you replicate it on a GTX 1080 Ti in your garage tower. Once it
+trains, you launch a translation API and set its price. Pay the bills with a compute grant, consulting
+gigs or by renting GPUs to crypto miners, while you train a better v2 model. Watch heat, the
+garage circuit and electricity, and add GPUs, a Titan V or an open mining frame. M1 ends when an
+investor offers you a seed round and you close it, or when your cash stays negative and the lab goes
+bankrupt.
 
 ## What's here
 

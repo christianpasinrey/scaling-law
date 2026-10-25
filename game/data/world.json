@@ -14,8 +14,8 @@
     "approx": true
   },
   "electricityUsdPerKwh": {
-    "value": 0.13,
-    "source": "US residential average 2017 (EIA)",
+    "value": 0.35,
+    "source": "US residential average 2017 (EIA) — ajuste de diseño (T15): 0.13→0.35, the US average understates a GPU garage: 24/7 load pushes a California (Bay Area) household into the top usage tiers, roughly 0.30–0.40 $/kWh in 2017 (approx.); at 0.13 a GPU-only lab took 62 weeks to go bankrupt, at 0.35 about 37",
     "approx": true
   },
   "failPerGpuDay": {
