@@ -1,7 +1,7 @@
 import { HOURS_PER_WEEK } from './state';
 import { dateOf } from './time';
 import { nextId } from './ids';
-import { appendPulso } from './pulsoLog';
+import { pushPulso } from './pulsoLog';
 import type { Rng } from './rng';
 import type { Contract, GameData, GameState, Grant, LedgerWeek } from './types';
 
@@ -109,17 +109,13 @@ export function settleWeek(s: GameState, d: GameData, rng: Rng): GameState {
   const negativeWeeks = cashUsd < 0 ? s.negativeWeeks + 1 : 0;
   next = { ...next, negativeWeeks };
   if (negativeWeeks >= eco.bankruptcyNegativeWeeks.value) {
-    next = {
-      ...next,
-      outcome: 'bankrupt',
-      pulso: appendPulso(next, {
-        id: 'news:bankrupt',
-        hour: next.hour,
-        cause: 'news',
-        text: `${next.labName} cierra: ${eco.bankruptcyNegativeWeeks.value} semanas seguidas sin caja y sin salida.`,
-        count: 1,
-      }),
-    };
+    next = pushPulso({ ...next, outcome: 'bankrupt' }, d, {
+      id: 'news:bankrupt',
+      hour: next.hour,
+      cause: 'news',
+      text: `${next.labName} cierra: ${eco.bankruptcyNegativeWeeks.value} semanas seguidas sin caja y sin salida.`,
+      count: 1,
+    });
   }
   return next;
 }

@@ -1,4 +1,4 @@
-import { appendPulso } from './pulsoLog';
+import { pushPulso } from './pulsoLog';
 import type { Rng } from './rng';
 import type { GameData, GameState, OwnedGpu } from './types';
 
@@ -33,18 +33,14 @@ export function stepPower(s: GameState, d: GameData, _rng: Rng): GameState {
   let cur = s;
   let watts = draw(cur);
   if (!cur.power.breakerTripped && watts > w.circuitWatts) {
-    cur = {
-      ...cur,
-      power: { ...cur.power, breakerTripped: true },
-      pulso: appendPulso(cur, {
-        id: `outage:power:${cur.hour}`,
-        hour: cur.hour,
-        cause: 'outage',
-        text: 'Ha saltado el diferencial: el garaje pidió más de lo que aguanta el circuito.',
-        count: 1,
-        focus: { kind: 'power' },
-      }),
-    };
+    cur = pushPulso({ ...cur, power: { ...cur.power, breakerTripped: true } }, d, {
+      id: `outage:power:${cur.hour}`,
+      hour: cur.hour,
+      cause: 'outage',
+      text: 'Ha saltado el diferencial: el garaje pidió más de lo que aguanta el circuito.',
+      count: 1,
+      focus: { kind: 'power' },
+    });
     watts = draw(cur);
   }
 

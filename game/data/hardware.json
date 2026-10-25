@@ -21,7 +21,8 @@
         "approx": true
       },
       "glb": "gpu_gtx1080ti_fe.glb",
-      "learnId": "gpu_gtx1080ti"
+      "learnId": "gpu_gtx1080ti",
+      "shortName": "GTX 1080 Ti"
     },
     {
       "id": "titan_v",
@@ -44,7 +45,8 @@
         "approx": true
       },
       "glb": "gpu_titan_v.glb",
-      "learnId": "gpu_titan_v"
+      "learnId": "gpu_titan_v",
+      "shortName": "Titan V"
     }
   ],
   "rigs": [

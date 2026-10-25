@@ -10,6 +10,8 @@ export interface Sourced<T> {
 export interface GpuModel {
   id: string;
   name: string;
+  /** Short display name used in Pulso texts, e.g. "GTX 1080 Ti". */
+  shortName: string;
   /** ISO date (YYYY-MM-DD). */
   releaseDate: string;
   priceUsd: Sourced<number>;
@@ -69,6 +71,12 @@ export interface WorldData {
     after: Sourced<number>;
     /** ISO instant at which the boom ends. */
     boomEndIso: string;
+  };
+  progression: {
+    seedMinCustomers: Sourced<number>;
+    seedMinReputation: Sourced<number>;
+    /** Weeks after declining before the seed round may be offered again. */
+    seedReofferWeeks: Sourced<number>;
   };
   seedRound: {
     raiseUsd: Sourced<number>;
@@ -146,7 +154,29 @@ export interface TrainingData {
   loss: { start: Sourced<number>; exponent: Sourced<number>; floor: Sourced<number> };
 }
 
+export type PulsoTemplateCause = 'latency' | 'quality' | 'price' | 'praise';
+
+export interface PulsoData {
+  /** Customer message cadence in game hours. */
+  cadenceH: Sourced<number>;
+  thresholds: {
+    latencyMs: Sourced<number>;
+    praiseSatisfaction: Sourced<number>;
+    /** Price complaints start above this multiple of the reference price. */
+    priceFactor: Sourced<number>;
+    qualityMinCustomers: Sourced<number>;
+  };
+  limits: {
+    dedupeHours: Sourced<number>;
+    maxNewPerDay: Sourced<number>;
+    maxItems: Sourced<number>;
+  };
+  templates: Record<PulsoTemplateCause, string[]>;
+  news: { titanV: string; seedRound: string; seedRoundClosed: string };
+}
+
 export interface GameData {
+  pulso: PulsoData;
   gpus: GpuModel[];
   rigs: RigModel[];
   world: WorldData;
@@ -257,5 +287,7 @@ export interface GameState {
   /** Consecutive weekly settlements that ended with negative cash. */
   negativeWeeks: number;
   outcome: null | 'seed_round' | 'bankrupt';
-  round?: { status: 'offered' | 'declined'; offeredHour: number };
+  round?: { status: 'offered' | 'declined'; offeredHour: number; declinedHour?: number };
+  /** Pulso items created on game day `day` (cap bookkeeping). */
+  pulsoDay?: { day: number; created: number };
 }

@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { loadData } from '../src/sim/data';
 import { advance, newGame } from '../src/sim';
 import { restoreRng } from '../src/sim/rng';
 import { stepServing } from '../src/sim/serving';
 import type { GameState, OwnedGpu } from '../src/sim/types';
 
-const d = loadData(structuredClone({ hardware, world, products }));
+const d = loadData(structuredClone({ hardware, world, products, pulso }));
 const rng = restoreRng(1);
 
 function gpu(i: number): OwnedGpu {
@@ -122,7 +123,7 @@ describe('serving through advance', () => {
     const s = serving(1, 800);
     const fresh = newGame(d, 1, 'Lab');
     // Full week with no failures noise: use a world without failures.
-    const r = structuredClone({ hardware, world, products });
+    const r = structuredClone({ hardware, world, products, pulso });
     r.world.failPerGpuDay.value = 0;
     const dn = loadData(r);
     const out = advance({ ...s, power: fresh.power }, dn, 168);

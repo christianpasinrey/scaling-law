@@ -96,5 +96,22 @@
       "source": "Game-design estimate: a GPU shut down by overheating restarts at full performance once it cools below the throttle temperature",
       "approx": true
     }
+  },
+  "progression": {
+    "seedMinCustomers": {
+      "value": 300,
+      "source": "Game-design choice: customers needed before a seed investor shows up",
+      "approx": true
+    },
+    "seedMinReputation": {
+      "value": 30,
+      "source": "Game-design choice: reputation needed before a seed investor shows up",
+      "approx": true
+    },
+    "seedReofferWeeks": {
+      "value": 8,
+      "source": "Game-design choice: weeks after declining before the seed round can be offered again",
+      "approx": true
+    }
   }
 }

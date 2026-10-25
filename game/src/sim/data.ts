@@ -1,4 +1,4 @@
-import type { EconomyData, GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
+import type { PulsoData, PulsoTemplateCause, EconomyData, GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
 
 export class DataError extends Error {
   constructor(message: string) {
@@ -46,6 +46,7 @@ function gpu(v: unknown, path: string): GpuModel {
   return {
     id: str(o.id, `${path}.id`),
     name: str(o.name, `${path}.name`),
+    shortName: str(o.shortName, `${path}.shortName`),
     releaseDate: iso(o.releaseDate, `${path}.releaseDate`),
     priceUsd: sourced(o.priceUsd, `${path}.priceUsd`),
     watts: sourced(o.watts, `${path}.watts`),
@@ -80,6 +81,7 @@ function world(v: unknown, path: string): WorldData {
   const th2 = obj(o.thermal, `${path}.thermal`);
   const rent = obj(o.rentalUsdPerDay, `${path}.rentalUsdPerDay`);
   const seed = obj(o.seedRound, `${path}.seedRound`);
+  const prog = obj(o.progression, `${path}.progression`);
   return {
     startIso: exact(o.startIso, '2017-06-12T17:57:00Z', `${path}.startIso`),
     startCashUsd: exact(o.startCashUsd, 10000, `${path}.startCashUsd`),
@@ -105,6 +107,11 @@ function world(v: unknown, path: string): WorldData {
       boom: sourced(rent.boom, `${path}.rentalUsdPerDay.boom`),
       after: sourced(rent.after, `${path}.rentalUsdPerDay.after`),
       boomEndIso: iso(rent.boomEndIso, `${path}.rentalUsdPerDay.boomEndIso`),
+    },
+    progression: {
+      seedMinCustomers: sourced(prog.seedMinCustomers, `${path}.progression.seedMinCustomers`),
+      seedMinReputation: sourced(prog.seedMinReputation, `${path}.progression.seedMinReputation`),
+      seedReofferWeeks: sourced(prog.seedReofferWeeks, `${path}.progression.seedReofferWeeks`),
     },
     seedRound: {
       raiseUsd: sourced(seed.raiseUsd, `${path}.seedRound.raiseUsd`),
@@ -187,13 +194,49 @@ function products(v: unknown, path: string): ProductsData {
   };
 }
 
+function pulsoData(v: unknown, path: string): PulsoData {
+  const o = obj(v, path);
+  const th = obj(o.thresholds, `${path}.thresholds`);
+  const lim = obj(o.limits, `${path}.limits`);
+  const tpl = obj(o.templates, `${path}.templates`);
+  const news = obj(o.news, `${path}.news`);
+  const causes: PulsoTemplateCause[] = ['latency', 'quality', 'price', 'praise'];
+  const templates = {} as Record<PulsoTemplateCause, string[]>;
+  for (const c of causes) {
+    const list = arr(tpl[c], `${path}.templates.${c}`).map((x, i) => str(x, `${path}.templates.${c}[${i}]`));
+    if (list.length < 4) throw new DataError(`${path}.templates.${c}: expected at least 4 templates`);
+    templates[c] = list;
+  }
+  return {
+    cadenceH: sourced(o.cadenceH, `${path}.cadenceH`),
+    thresholds: {
+      latencyMs: sourced(th.latencyMs, `${path}.thresholds.latencyMs`),
+      praiseSatisfaction: sourced(th.praiseSatisfaction, `${path}.thresholds.praiseSatisfaction`),
+      priceFactor: sourced(th.priceFactor, `${path}.thresholds.priceFactor`),
+      qualityMinCustomers: sourced(th.qualityMinCustomers, `${path}.thresholds.qualityMinCustomers`),
+    },
+    limits: {
+      dedupeHours: sourced(lim.dedupeHours, `${path}.limits.dedupeHours`),
+      maxNewPerDay: sourced(lim.maxNewPerDay, `${path}.limits.maxNewPerDay`),
+      maxItems: sourced(lim.maxItems, `${path}.limits.maxItems`),
+    },
+    templates,
+    news: {
+      titanV: str(news.titanV, `${path}.news.titanV`),
+      seedRound: str(news.seedRound, `${path}.news.seedRound`),
+      seedRoundClosed: str(news.seedRoundClosed, `${path}.news.seedRoundClosed`),
+    },
+  };
+}
+
 /** Validates raw JSON (extra fields tolerated, defined ones strict). Throws DataError naming the path. */
-export function loadData(raw: { hardware: unknown; world: unknown; products: unknown }): GameData {
+export function loadData(raw: { hardware: unknown; world: unknown; products: unknown; pulso: unknown }): GameData {
   const hw = obj(raw.hardware, 'hardware');
   return {
     gpus: arr(hw.gpus, 'hardware.gpus').map((g, i) => gpu(g, `hardware.gpus[${i}]`)),
     rigs: arr(hw.rigs, 'hardware.rigs').map((r, i) => rig(r, `hardware.rigs[${i}]`)),
     world: world(raw.world, 'world'),
     products: products(raw.products, 'products'),
+    pulso: pulsoData(raw.pulso, 'pulso'),
   };
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { loadData } from '../src/sim/data';
 import { advance, newGame } from '../src/sim';
 import { restoreRng } from '../src/sim/rng';
@@ -9,7 +10,7 @@ import type { Rng } from '../src/sim/rng';
 import { lossAt, stepTraining } from '../src/sim/training';
 import type { GameData, GameState, OwnedGpu } from '../src/sim/types';
 
-const raw = () => structuredClone({ hardware, world, products });
+const raw = () => structuredClone({ hardware, world, products, pulso });
 const d = loadData(raw());
 /** Same data with no hardware failures. */
 const dNoFail = (() => {

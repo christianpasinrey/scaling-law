@@ -1,0 +1,77 @@
+{
+  "cadenceH": {
+    "value": 6,
+    "source": "Game-design choice: hours between customer messages while the product is launched",
+    "approx": true
+  },
+  "thresholds": {
+    "latencyMs": {
+      "value": 1000,
+      "source": "Game-design choice: latency above which customers complain, in ms",
+      "approx": true
+    },
+    "praiseSatisfaction": {
+      "value": 0.7,
+      "source": "Game-design choice: satisfaction at or above which customers praise the service, 0..1",
+      "approx": true
+    },
+    "priceFactor": {
+      "value": 2,
+      "source": "Game-design choice: customers complain when the price exceeds this multiple of the reference price",
+      "approx": true
+    },
+    "qualityMinCustomers": {
+      "value": 100,
+      "source": "Game-design choice: customers needed before quality complaints about the first model appear",
+      "approx": true
+    }
+  },
+  "limits": {
+    "dedupeHours": {
+      "value": 24,
+      "source": "Game-design choice: window in which same-cause same-focus items are grouped into one",
+      "approx": true
+    },
+    "maxNewPerDay": {
+      "value": 3,
+      "source": "Game-design choice: most new Pulso items per game day (command warnings are exempt)",
+      "approx": true
+    },
+    "maxItems": {
+      "value": 200,
+      "source": "Game-design choice: Pulso items kept in the feed",
+      "approx": true
+    }
+  },
+  "templates": {
+    "latency": [
+      "Llevo diez minutos esperando a que me traduzca los comentarios de un repositorio. ¿Está caído?",
+      "Con tanta espera el traductor no me sirve para mis correos del trabajo. Va lentísimo.",
+      "Subí un contrato de 40 páginas y la traducción tarda una eternidad. Así no se puede.",
+      "Mis apuntes de clase llevan toda la tarde en cola. ¿Alguien más tiene problemas de velocidad?"
+    ],
+    "quality": [
+      "Tradujo «bank» como «banco» en un texto sobre ríos. Se nota que el modelo es muy básico.",
+      "Los comentarios de mi código salen con frases rarísimas. Falta calidad.",
+      "Para mis apuntes de la uni va bien, pero con un contrato se le escapan matices importantes.",
+      "Los correos formales me salen demasiado literales. Esperaba algo más fluido."
+    ],
+    "price": [
+      "Veinte dólares el millón de caracteres está bien, pero este precio ya es demasiado para mis correos.",
+      "Con lo que cobráis ahora me sale más barato pagar a un traductor para mis contratos.",
+      "He dejado de traducir mis apuntes aquí: la tarifa se ha disparado.",
+      "Subir tanto el precio para traducir comentarios de código no tiene sentido."
+    ],
+    "praise": [
+      "Traduje el manual completo de mi proyecto en una tarde. Esto funciona de maravilla.",
+      "Mis correos a clientes de fuera salen perfectos y rapidísimos. Gracias.",
+      "Por fin un traductor que entiende los comentarios de mi código. Recomendado.",
+      "Mis apuntes de inglés ya son legibles. Les cuento a mis compañeros que lo usen."
+    ]
+  },
+  "news": {
+    "titanV": "Sale la Titan V de NVIDIA: 2.999 $ y Tensor Cores para entrenar bastante más rápido que una 1080 Ti.",
+    "seedRound": "Un inversor se ha fijado en tu laboratorio y te ofrece una ronda semilla. Puedes aceptarla o rechazarla.",
+    "seedRoundClosed": "Has cerrado la ronda semilla. Tu laboratorio deja de ser un proyecto de garaje."
+  }
+}

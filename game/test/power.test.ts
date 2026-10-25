@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { loadData } from '../src/sim/data';
 import { advance, applyCommand, newGame } from '../src/sim';
 import { gpuPerfFactor } from '../src/sim/power';
 import type { GameState, OwnedGpu } from '../src/sim/types';
 
-const d = loadData(structuredClone({ hardware, world, products }));
+const d = loadData(structuredClone({ hardware, world, products, pulso }));
 
 function gpuAt(id: number, rigId: string, slot: number): OwnedGpu {
   return { id: `gpu-${id}`, model: 'gtx1080ti', rigId, slot, tempC: 25, perf: 1 };

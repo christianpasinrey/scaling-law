@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { loadData } from '../src/sim/data';
 import { advance, applyCommand, dateOf, newGame } from '../src/sim';
 import type { Command } from '../src/sim';
 
-const d = loadData(structuredClone({ hardware, world, products }));
+const d = loadData(structuredClone({ hardware, world, products, pulso }));
 const fresh = () => newGame(d, 42, 'Garage Lab');
 
 describe('newGame', () => {

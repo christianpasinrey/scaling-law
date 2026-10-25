@@ -1,4 +1,4 @@
-import { appendPulso } from './pulsoLog';
+import { gpuLabel, pushPulso } from './pulsoLog';
 import type { Rng } from './rng';
 import type { GameData, GameState, Grant, PulsoItem, TrainingJob } from './types';
 
@@ -31,7 +31,7 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   let done = job.doneP100h;
   let checkpoint = job.checkpointP100h;
   let rolledBack = false;
-  let pulso = s.pulso;
+  let cur = s;
   let grants = s.grants;
 
   // Breaker out: the garage has no power, anything since the last checkpoint is lost.
@@ -50,11 +50,11 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
         id: `outage:gpu:${g.id}:${s.hour}`,
         hour: s.hour,
         cause: 'outage',
-        text: `La GPU ${g.id} se ha caído y el entrenamiento vuelve al último punto de control.`,
+        text: `La GPU ${gpuLabel(d, g)} se ha caído y el entrenamiento vuelve al último punto de control.`,
         count: 1,
         focus: { kind: 'gpu', id: g.id },
       };
-      pulso = appendPulso({ ...s, pulso }, item);
+      cur = pushPulso(cur, d, item);
     }
   }
 
@@ -82,8 +82,7 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
   const finished = done >= job.workP100h;
   const updated: TrainingJob = { ...job, doneP100h: done, checkpointP100h: checkpoint, lossCurve, status: finished ? 'done' : 'running' };
   let next: GameState = {
-    ...s,
-    pulso,
+    ...cur,
     grants,
     jobs: s.jobs.map((j) => (j.id === job.id ? updated : j)),
   };
@@ -95,19 +94,19 @@ export function stepTraining(s: GameState, d: GameData, rng: Rng): GameState {
 /** Rewards and unlocks when a job finishes. */
 function complete(s: GameState, d: GameData, id: TrainingJob['id']): GameState {
   if (id === 'replicate_paper') {
-    return {
+    const next: GameState = {
       ...s,
       reputation: s.reputation + d.products.economy.reputation.replicatePaper.value,
-      pulso: appendPulso(s, {
-        id: 'praise:replicate_paper',
-        hour: s.hour,
-        cause: 'praise',
-        text: 'Has replicado el paper',
-        count: 1,
-      }),
       jobs: s.jobs.map((j) => (j.id === 'translation_v2' && j.status === 'locked' ? { ...j, status: 'ready' as const } : j)),
       product: { ...s.product, launched: true },
     };
+    return pushPulso(next, d, {
+      id: 'praise:replicate_paper',
+      hour: s.hour,
+      cause: 'praise',
+      text: 'Has replicado el paper',
+      count: 1,
+    });
   }
   return { ...s, reputation: s.reputation + d.products.economy.reputation.translationV2.value, flags: { ...s.flags, model_v2: true } };
 }

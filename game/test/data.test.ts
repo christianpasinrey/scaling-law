@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { DataError, loadData } from '../src/sim/data';
 
 const researchFiles = Object.keys(import.meta.glob("../../docs/research/*.md", { query: "?url" })).map((p) => p.replace("../../", ""));
-const raw = () => structuredClone({ hardware, world, products });
+const raw = () => structuredClone({ hardware, world, products, pulso });
 
 describe('loadData', () => {
   const d = loadData(raw());
@@ -108,7 +109,7 @@ describe('loadData', () => {
     const c = raw() as any;
     c.hardware.rigs[0].id = 'nope';
     expect(() => loadData(c)).toThrow(DataError);
-    expect(() => loadData({ hardware: null, world: {}, products: {} })).toThrow(DataError);
+    expect(() => loadData({ hardware: null, world: {}, products: {}, pulso: {} })).toThrow(DataError);
   });
 
   it('checkpointEveryH must be exactly 4', () => {
@@ -128,7 +129,7 @@ describe('loadData', () => {
         }
       }
     };
-    walk({ hardware, world, products });
+    walk({ hardware, world, products, pulso });
     expect(found.length).toBeGreaterThan(0);
     for (const s of found) {
       const file = s.split(/[ ;]/)[0] as string;

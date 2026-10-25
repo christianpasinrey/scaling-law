@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import hardware from '../data/hardware.json';
 import world from '../data/world.json';
 import products from '../data/products.json';
+import pulso from '../data/pulso.es.json';
 import { loadData } from '../src/sim/data';
 import { advance, applyCommand, newGame } from '../src/sim';
 import { restoreRng } from '../src/sim/rng';
@@ -10,7 +11,7 @@ import { offerContracts, offerGrants, settleWeek } from '../src/sim/economy';
 import { stepTraining } from '../src/sim/training';
 import type { GameState, Grant } from '../src/sim/types';
 
-const raw = () => structuredClone({ hardware, world, products });
+const raw = () => structuredClone({ hardware, world, products, pulso });
 const d = loadData(raw());
 const dNoFail = (() => {
   const r = raw();
