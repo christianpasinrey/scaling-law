@@ -1,4 +1,4 @@
-import type { GameData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
+import type { GameData, TrainingData, GpuModel, ProductsData, RigModel, Sourced, WorldData } from './types';
 
 export class DataError extends Error {
   constructor(message: string) {
@@ -121,7 +121,18 @@ function products(v: unknown, path: string): ProductsData {
   const job = (k: string): { workP100h: Sourced<number> } => ({
     workP100h: sourced(obj(jobs[k], `${path}.jobs.${k}`).workP100h, `${path}.jobs.${k}.workP100h`),
   });
+  const tr2 = obj(o.training, `${path}.training`);
+  const loss = obj(tr2.loss, `${path}.training.loss`);
+  const training: TrainingData = {
+    researchContractFactor: sourced(tr2.researchContractFactor, `${path}.training.researchContractFactor`),
+    loss: {
+      start: sourced(loss.start, `${path}.training.loss.start`),
+      exponent: sourced(loss.exponent, `${path}.training.loss.exponent`),
+      floor: sourced(loss.floor, `${path}.training.loss.floor`),
+    },
+  };
   return {
+    training,
     translation: {
       defaultPriceUsdPerMChars: sourced(tr.defaultPriceUsdPerMChars, `${path}.translation.defaultPriceUsdPerMChars`),
     },

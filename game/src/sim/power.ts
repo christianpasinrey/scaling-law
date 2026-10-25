@@ -1,5 +1,6 @@
+import { appendPulso } from './pulsoLog';
 import type { Rng } from './rng';
-import type { GameData, GameState, OwnedGpu, PulsoItem } from './types';
+import type { GameData, GameState, OwnedGpu } from './types';
 
 /** Performance multiplier of a GPU: 1 (normal), 0.7 (throttled) or 0 (shut down). */
 export function gpuPerfFactor(g: OwnedGpu): number {
@@ -11,22 +12,6 @@ function loadOf(s: GameState, g: OwnedGpu): number {
   if (s.power.breakerTripped || g.perf === 0) return 0;
   const a = s.allocation[g.id];
   return a === 'train' || a === 'serve' || a === 'rent' ? 1 : 0;
-}
-
-/**
- * Appends the breaker outage item to Pulso directly.
- * TODO(Task 8): replace with the pulso module's aggregation and rate limiting.
- */
-function pushOutage(s: GameState, text: string): PulsoItem[] {
-  const item: PulsoItem = {
-    id: `outage:power:${s.hour}`,
-    hour: s.hour,
-    cause: 'outage',
-    text,
-    count: 1,
-    focus: { kind: 'power' },
-  };
-  return [...s.pulso, item];
 }
 
 /**
@@ -51,7 +36,14 @@ export function stepPower(s: GameState, d: GameData, _rng: Rng): GameState {
     cur = {
       ...cur,
       power: { ...cur.power, breakerTripped: true },
-      pulso: pushOutage(cur, 'Ha saltado el diferencial: el garaje pidió más de lo que aguanta el circuito.'),
+      pulso: appendPulso(cur, {
+        id: `outage:power:${cur.hour}`,
+        hour: cur.hour,
+        cause: 'outage',
+        text: 'Ha saltado el diferencial: el garaje pidió más de lo que aguanta el circuito.',
+        count: 1,
+        focus: { kind: 'power' },
+      }),
     };
     watts = draw(cur);
   }

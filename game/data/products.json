@@ -26,5 +26,29 @@
       "source": "Game-design choice: a checkpoint every 4 hours",
       "approx": true
     }
+  },
+  "training": {
+    "researchContractFactor": {
+      "value": 0.5,
+      "source": "Game-design choice: an active research contract takes half of the lab's own GPU time",
+      "approx": true
+    },
+    "loss": {
+      "start": {
+        "value": 9,
+        "source": "Didactic curve shape, not paper data: loss span above the floor at 0 % progress",
+        "approx": true
+      },
+      "exponent": {
+        "value": 1.6,
+        "source": "Didactic curve shape, not paper data: how fast the loss falls",
+        "approx": true
+      },
+      "floor": {
+        "value": 1.8,
+        "source": "Didactic curve shape, not paper data: loss at 100 % progress",
+        "approx": true
+      }
+    }
   }
 }

@@ -93,6 +93,14 @@ export interface ProductsData {
     /** Hours between training checkpoints. */
     checkpointEveryH: Sourced<4>;
   };
+  training: TrainingData;
+}
+
+export interface TrainingData {
+  /** Multiplier on own-GPU progress while a research contract is active. */
+  researchContractFactor: Sourced<number>;
+  /** Didactic loss curve: start * (1 - f)^exponent + floor. */
+  loss: { start: Sourced<number>; exponent: Sourced<number>; floor: Sourced<number> };
 }
 
 export interface GameData {
