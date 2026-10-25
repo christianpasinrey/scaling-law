@@ -113,5 +113,17 @@
       "source": "Game-design choice: weeks after declining before the seed round can be offered again",
       "approx": true
     }
+  },
+  "clock": {
+    "weekRealMs": {
+      "value": 40000,
+      "source": "Game-design estimate: at x1 one game week (168 h) lasts 40 s of real time",
+      "approx": true
+    },
+    "maxTickMs": {
+      "value": 1000,
+      "source": "Game-design estimate: real ms per tick are clamped so a throttled or resumed tab never catches up lost time",
+      "approx": true
+    }
   }
 }

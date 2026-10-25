@@ -82,10 +82,15 @@ function world(v: unknown, path: string): WorldData {
   const rent = obj(o.rentalUsdPerDay, `${path}.rentalUsdPerDay`);
   const seed = obj(o.seedRound, `${path}.seedRound`);
   const prog = obj(o.progression, `${path}.progression`);
+  const clock = obj(o.clock, `${path}.clock`);
   return {
     startIso: exact(o.startIso, '2017-06-12T17:57:00Z', `${path}.startIso`),
     startCashUsd: exact(o.startCashUsd, 10000, `${path}.startCashUsd`),
     circuitWatts: exact(o.circuitWatts, 1800, `${path}.circuitWatts`),
+    clock: {
+      weekRealMs: sourced(clock.weekRealMs, `${path}.clock.weekRealMs`),
+      maxTickMs: sourced(clock.maxTickMs, `${path}.clock.maxTickMs`),
+    },
     circuitSafeWatts: exact(o.circuitSafeWatts, 1440, `${path}.circuitSafeWatts`),
     ambientC: sourced(o.ambientC, `${path}.ambientC`),
     electricityUsdPerKwh: sourced(o.electricityUsdPerKwh, `${path}.electricityUsdPerKwh`),

@@ -37,6 +37,7 @@ export interface RigModel {
 }
 
 export interface WorldData {
+  clock: { weekRealMs: Sourced<number>; maxTickMs: Sourced<number> };
   startIso: '2017-06-12T17:57:00Z';
   startCashUsd: 10000;
   circuitWatts: 1800;
