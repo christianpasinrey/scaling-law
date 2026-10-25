@@ -39,7 +39,9 @@ export function stepServing(s: GameState, d: GameData, _rng: Rng): GameState {
 
   const ref = d.products.translation.defaultPriceUsdPerMChars.value;
   const price = Math.max(p.priceUsdPerMChars, 1e-9);
-  const g = t.weeklyGrowth.value * (2 * satisfaction - 1) * Math.pow(ref / price, t.elasticityExponent.value);
+  const elasticity = Math.min(t.maxElasticityFactor.value, Math.pow(ref / price, t.elasticityExponent.value));
+  const gMax = t.maxWeeklyGrowthAbs.value;
+  const g = clamp(t.weeklyGrowth.value * (2 * satisfaction - 1) * elasticity, -gMax, gMax);
   const customers = Math.max(0, customersNow * Math.pow(1 + g, 1 / HOURS_PER_WEEK));
 
   return {

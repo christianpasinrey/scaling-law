@@ -92,6 +92,10 @@ export interface TranslationProductData {
   /** Weekly customer growth at satisfaction 1 and the reference price. */
   weeklyGrowth: Sourced<number>;
   elasticityExponent: Sourced<number>;
+  maxElasticityFactor: Sourced<number>;
+  maxWeeklyGrowthAbs: Sourced<number>;
+  minPriceUsdPerMChars: Sourced<number>;
+  maxPriceUsdPerMChars: Sourced<number>;
 }
 
 export interface JobData {

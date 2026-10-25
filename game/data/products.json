@@ -49,6 +49,26 @@
       "value": 1.3,
       "source": "Game-design estimate: price elasticity of customer growth, (reference price / price)^exponent",
       "approx": true
+    },
+    "maxElasticityFactor": {
+      "value": 4,
+      "source": "Game-design estimate: cap on (reference price / price)^exponent so very cheap prices cannot explode growth",
+      "approx": true
+    },
+    "maxWeeklyGrowthAbs": {
+      "value": 0.5,
+      "source": "Game-design estimate: weekly customer growth/decline is clamped to +/-50 % so customers never go negative or explode",
+      "approx": true
+    },
+    "minPriceUsdPerMChars": {
+      "value": 1,
+      "source": "Game-design estimate: lowest legal price per million characters",
+      "approx": true
+    },
+    "maxPriceUsdPerMChars": {
+      "value": 200,
+      "source": "Game-design estimate: highest legal price per million characters",
+      "approx": true
     }
   },
   "jobs": {

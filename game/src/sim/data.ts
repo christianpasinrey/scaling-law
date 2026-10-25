@@ -171,6 +171,10 @@ function products(v: unknown, path: string): ProductsData {
       qualityModelV2: sourced(tr.qualityModelV2, `${path}.translation.qualityModelV2`),
       weeklyGrowth: sourced(tr.weeklyGrowth, `${path}.translation.weeklyGrowth`),
       elasticityExponent: sourced(tr.elasticityExponent, `${path}.translation.elasticityExponent`),
+      maxElasticityFactor: sourced(tr.maxElasticityFactor, `${path}.translation.maxElasticityFactor`),
+      maxWeeklyGrowthAbs: sourced(tr.maxWeeklyGrowthAbs, `${path}.translation.maxWeeklyGrowthAbs`),
+      minPriceUsdPerMChars: sourced(tr.minPriceUsdPerMChars, `${path}.translation.minPriceUsdPerMChars`),
+      maxPriceUsdPerMChars: sourced(tr.maxPriceUsdPerMChars, `${path}.translation.maxPriceUsdPerMChars`),
     },
     jobs: {
       replicate_paper: job('replicate_paper'),

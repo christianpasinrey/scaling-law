@@ -154,7 +154,7 @@ describe('commands', () => {
   });
   it('set_price validates and sets', () => {
     expect(applyCommand(fresh(), d, { t: 'set_price', usdPerMChars: 12.5 }).product.priceUsdPerMChars).toBe(12.5);
-    for (const v of [0, -1, NaN, Infinity]) {
+    for (const v of [0, -1, NaN, Infinity, 0.5, 500]) {
       const s = applyCommand(fresh(), d, { t: 'set_price', usdPerMChars: v });
       expect(s.product.priceUsdPerMChars).toBe(20);
       expect(s.pulso.at(-1)?.cause).toBe('warning');

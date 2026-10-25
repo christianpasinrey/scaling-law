@@ -132,3 +132,22 @@ describe('serving through advance', () => {
     expect(out.product.weekServedMChars).toBe(0);
   });
 });
+
+describe('growth bounds (R12)', () => {
+  it('price 1 with satisfaction 0.3 for 1000 h: customers finite and >= 0', () => {
+    // 2 GPUs, 1600 customers -> saturated?? use 1 GPU and 1600 customers: satisfaction 0.3
+    let s = serving(1, 1600, 1);
+    for (let i = 0; i < 1000; i++) {
+      s = stepServing(s, d, rng);
+      expect(Number.isFinite(s.product.customers)).toBe(true);
+      expect(s.product.customers).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it('extreme price keeps weekly growth within the cap', () => {
+    let s = serving(100, 1000, 0.001);
+    s = { ...s, flags: { ...s.flags, model_v2: true } };
+    for (let i = 0; i < 168; i++) s = stepServing(s, d, rng);
+    expect(s.product.customers).toBeLessThanOrEqual(1000 * 1.5 + 1e-6);
+    expect(Number.isFinite(s.product.customers)).toBe(true);
+  });
+});
