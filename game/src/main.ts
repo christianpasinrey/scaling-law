@@ -10,7 +10,7 @@ import type { GameState } from './sim';
 import type { Speed } from './protocol';
 import { SimBridge } from './bridge';
 import type { WorkerLike } from './bridge';
-import { exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave } from './save';
+import { exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave, startPolicy } from './save';
 import { createScene } from './render/scene';
 import { GarageView } from './render/garage';
 import { BrainView } from './render/brain';
@@ -145,27 +145,22 @@ async function startNewGame(): Promise<void> {
   void persist(s);
 }
 
-window.addEventListener('pagehide', () => {
-  // Best effort: IndexedDB may not finish before the page goes away.
+// Best effort: IndexedDB may not finish before the page goes away; hiding the tab is the last reliable moment on mobile.
+const saveOnLeave = (): void => {
   if (canSave && state) void saveGame(state).catch(() => undefined);
+};
+window.addEventListener('pagehide', saveOnLeave);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveOnLeave();
 });
 
 async function boot(): Promise<void> {
-  const r = await loadGame();
-  if (r.ok) {
-    canSave = true;
-    begin(r.state);
-    return;
-  }
-  if (r.reason === 'unavailable') {
-    canSave = false;
-    ui.banner('storage', t('save.unavailable'), { tone: 'warn' });
-  } else {
-    canSave = true; // 'none' | 'corrupt' | 'version': the new game takes slot-1
-    if (r.reason === 'corrupt') ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
-    if (r.reason === 'version') ui.banner('load', t('save.version'), { tone: 'warn', dismissible: true });
-  }
-  begin(newGame(data, randomSeed(), t('save.defaultLab')));
+  const p = startPolicy(await loadGame());
+  canSave = p.canSave;
+  if (p.notice === 'unavailable') ui.banner('storage', t('save.unavailable'), { tone: 'warn' });
+  else if (p.notice === 'corrupt') ui.banner('load', t('save.corrupt'), { tone: 'warn', dismissible: true });
+  else if (p.notice === 'version') ui.banner('load', t('save.version'), { tone: 'warn', dismissible: true });
+  begin(p.resume ?? newGame(data, randomSeed(), t('save.defaultLab')));
 }
 
 // Dev only: lets browser checks read the state and freeze the brain's animation phase.

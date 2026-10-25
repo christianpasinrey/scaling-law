@@ -79,6 +79,14 @@ body {
 .ui .banners > * {
   pointer-events: auto;
 }
+/* The panel host spans the dock even when empty: only real panels take the pointer, so the garage and the
+   HUD menu stay clickable underneath. */
+.ui .dock > .panel-host {
+  pointer-events: none;
+}
+.ui .panel {
+  pointer-events: auto;
+}
 
 .panel-surface {
   background: var(--surface);
@@ -263,6 +271,8 @@ a {
 /* ---------------------------------------------------------------- HUD */
 
 .hud {
+  position: relative;
+  z-index: 4; /* its drop-down menu opens over the dock */
   display: flex;
   flex-wrap: wrap;
   align-items: center;

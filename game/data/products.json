@@ -47,7 +47,7 @@
     },
     "elasticityExponent": {
       "value": 1.3,
-      "source": "Game-design estimate: price elasticity of customer growth, (reference price / price)^exponent",
+      "source": "Game-design estimate: price elasticity of customer growth (ruling R22): with growing demand (satisfaction > 0.5) the factor is (reference price / price)^exponent, with shrinking demand (price / reference price)^exponent, so a high price speeds up losses and a low price slows them",
       "approx": true
     },
     "maxElasticityFactor": {

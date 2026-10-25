@@ -16,7 +16,7 @@ const fresh = () => newGame(d, 42, 'Garage Lab');
 
 function hostWith(speed: 0 | 1 | 2 | 4 = 1, s: GameState = fresh()) {
   const h = createSimHost(d);
-  h.handle({ t: 'init', state: s });
+  h.handle({ t: 'init', state: s, epoch: 1 });
   h.handle({ t: 'speed', x: speed });
   return h;
 }
@@ -69,10 +69,18 @@ describe('sim host clock', () => {
     // The 0.2 h remainder is still there: 0.8 h more at x2 (0.4 h real) reaches the second hour.
     expect(hourOf(h.handle({ t: 'tick', realMs: 0.4 * msPerHour }))).toBe(2);
   });
+  it('replies to init with the state and tags later states with that epoch (R23)', () => {
+    const h = createSimHost(d);
+    const s = fresh();
+    expect(h.handle({ t: 'init', state: s, epoch: 7 })).toEqual({ t: 'state', state: s, epoch: 7 });
+    h.handle({ t: 'speed', x: 1 });
+    expect(h.handle({ t: 'tick', realMs: 1000 })?.epoch).toBe(7);
+    expect(h.handle({ t: 'cmd', cmd: { t: 'set_price', usdPerMChars: 25 } })?.epoch).toBe(7);
+  });
   it('init resets the accumulator', () => {
     const h = hostWith(1);
     h.handle({ t: 'tick', realMs: 200 });
-    h.handle({ t: 'init', state: fresh() });
+    h.handle({ t: 'init', state: fresh(), epoch: 2 });
     const m = h.handle({ t: 'tick', realMs: 200 });
     expect(m).toBeNull();
   });
@@ -132,7 +140,7 @@ describe('SimBridge', () => {
     t.frame(10);
     const kinds = t.w.sent.map((m) => m.t);
     expect(kinds.indexOf('cmd')).toBeLessThan(kinds.lastIndexOf('tick'));
-    t.w.onmessage?.({ data: { t: 'state', state: fresh() } });
+    t.w.onmessage?.({ data: { t: 'state', state: fresh(), epoch: 1 } });
     expect(got).toHaveLength(1);
   });
   it('posts no ticks while paused, and the first tick after resuming does not include the pause', () => {
@@ -184,5 +192,38 @@ describe('SimBridge', () => {
     t.hide(true);
     expect(t.w.sent.length).toBe(before);
     expect(got).toHaveLength(0);
+  });
+  it('drops a stale state posted by the previous game before the new init reply (R23)', () => {
+    const t = setup();
+    const got: GameState[] = [];
+    t.b.onState((s) => got.push(s));
+    const a = fresh();
+    const b: GameState = { ...newGame(d, 99, 'Imported'), hour: 500 };
+    t.b.start(a);
+    const epochA = (t.w.sent[0] as Extract<ToWorker, { t: 'init' }>).epoch;
+    t.b.start(b);
+    const initB = t.w.sent.filter((m) => m.t === 'init')[1] as Extract<ToWorker, { t: 'init' }>;
+    expect(initB.epoch).toBeGreaterThan(epochA);
+    // The worker had already posted a tick of game A when B's init went out.
+    t.w.onmessage?.({ data: { t: 'state', state: { ...a, hour: 3 }, epoch: epochA } });
+    expect(got).toEqual([]);
+    t.w.onmessage?.({ data: { t: 'state', state: b, epoch: initB.epoch } });
+    expect(got).toEqual([b]);
+  });
+  it('an autosave listener never sees (so never persists) a stale state (R23)', () => {
+    const t = setup();
+    const saved: GameState[] = [];
+    let prev = 0;
+    t.b.onState((s) => {
+      // Same rule main.ts uses: save when the game week changes.
+      if (Math.floor(s.hour / 168) !== Math.floor(prev / 168)) saved.push(s);
+      prev = s.hour;
+    });
+    const old: GameState = { ...fresh(), labName: 'Old', hour: 167 };
+    t.b.start(old);
+    const e1 = (t.w.sent[0] as Extract<ToWorker, { t: 'init' }>).epoch;
+    t.b.start({ ...fresh(), labName: 'New' });
+    t.w.onmessage?.({ data: { t: 'state', state: { ...old, hour: 168 }, epoch: e1 } }); // would cross a week
+    expect(saved).toEqual([]);
   });
 });

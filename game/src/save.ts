@@ -114,3 +114,19 @@ export async function importSave(file: File | Blob): Promise<ImportResult> {
     return { ok: false, reason: 'corrupt' };
   }
 }
+
+export interface StartPolicy {
+  /** The loaded game to continue, or null to start a new one. */
+  resume: GameState | null;
+  /** Ruling R16: false only when storage itself failed, so a real save is never overwritten. */
+  canSave: boolean;
+  /** What to tell the player: 'unavailable' is a persistent warning, the others a dismissible notice. */
+  notice: null | 'unavailable' | 'corrupt' | 'version';
+}
+
+/** Decides how the game starts from a load result (pure). */
+export function startPolicy(r: LoadResult): StartPolicy {
+  if (r.ok) return { resume: r.state, canSave: true, notice: null };
+  if (r.reason === 'unavailable') return { resume: null, canSave: false, notice: 'unavailable' };
+  return { resume: null, canSave: true, notice: r.reason === 'none' ? null : r.reason };
+}

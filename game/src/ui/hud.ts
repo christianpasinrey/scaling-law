@@ -64,7 +64,7 @@ export function mount(root: HTMLElement, deps: HudDeps): HudApi {
   );
 
   const rep = el('span', { class: 'num' });
-  const reset = el('button', { type: 'button', class: 'btn btn-danger', hidden: true }, t('hud.breaker.reset'));
+  const reset = el('button', { type: 'button', class: 'btn btn-danger', hidden: true, 'aria-label': t('hud.breaker.reset.aria'), title: t('hud.breaker.reset.aria') }, t('hud.breaker.reset'));
   reset.addEventListener('click', () => deps.send({ t: 'reset_breaker' }));
 
   const brainBtn = el('button', { type: 'button', class: 'btn', 'aria-pressed': 'false', title: t('hud.brain.title') }, t('hud.brain'));

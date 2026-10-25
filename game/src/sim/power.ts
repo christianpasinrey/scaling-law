@@ -37,7 +37,7 @@ export function stepPower(s: GameState, d: GameData, _rng: Rng): GameState {
       id: `outage:power:${cur.hour}`,
       hour: cur.hour,
       cause: 'outage',
-      text: 'Ha saltado el diferencial: el garaje pidió más de lo que aguanta el circuito.',
+      text: 'Han saltado los plomos (magnetotérmico): el garaje pidió más de lo que aguanta el circuito.',
       count: 1,
       focus: { kind: 'power' },
     });

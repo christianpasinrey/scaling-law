@@ -102,7 +102,7 @@ export function applyCommand(s: GameState, d: GameData, c: Command): GameState {
     case 'reset_breaker':
       // Clears the flag only: if the draw is still over the limit, the next stepPower trips it again.
       if (s.power.breakerTripped) return { ...s, power: { ...s.power, breakerTripped: false } };
-      return warn(s, d, 'breaker_not_tripped', 'El diferencial no ha saltado.');
+      return warn(s, d, 'breaker_not_tripped', 'Los plomos no han saltado.');
     case 'accept_round': {
       if (s.round?.status !== 'offered') return warn(s, d, 'no_round', 'No hay ninguna ronda abierta.');
       const closed: GameState = { ...s, cashUsd: s.cashUsd + d.world.seedRound.raiseUsd.value, outcome: 'seed_round' };

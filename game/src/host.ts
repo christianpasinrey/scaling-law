@@ -13,6 +13,7 @@ export function createSimHost(data: GameData): SimHost {
   let state: GameState | null = null;
   let speed: Speed = 0;
   let acc = 0; // fractional game hours
+  let epoch = 0;
 
   return {
     handle(msg) {
@@ -20,14 +21,15 @@ export function createSimHost(data: GameData): SimHost {
         case 'init':
           state = msg.state;
           acc = 0;
-          return null;
+          epoch = msg.epoch;
+          return { t: 'state', state, epoch };
         case 'speed':
           speed = msg.x;
           return null;
         case 'cmd':
           if (!state) return null;
           state = applyCommand(state, data, msg.cmd);
-          return { t: 'state', state };
+          return { t: 'state', state, epoch };
         case 'tick': {
           if (!state || state.outcome !== null) return null;
           const eff = state.power.breakerTripped ? Math.min(speed, 1) : speed;
@@ -38,7 +40,7 @@ export function createSimHost(data: GameData): SimHost {
           if (hours < 1) return null;
           acc -= hours;
           state = advance(state, data, hours);
-          return { t: 'state', state };
+          return { t: 'state', state, epoch };
         }
       }
     },

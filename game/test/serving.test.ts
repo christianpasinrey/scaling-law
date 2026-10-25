@@ -152,3 +152,23 @@ describe('growth bounds (R12)', () => {
     expect(Number.isFinite(s.product.customers)).toBe(true);
   });
 });
+
+describe('price elasticity follows the sign of satisfaction (R22)', () => {
+  const after = (n: number, price: number) => stepServing(serving(n, 1000, price), d, rng).product.customers;
+  it('unhappy customers (no capacity, s < 0.5): a high price loses them faster, a low price slower', () => {
+    expect(stepServing(serving(0, 1000, 20), d, rng).product.satisfaction).toBeLessThan(0.5);
+    const ref = after(0, 20);
+    expect(ref).toBeLessThan(1000);
+    expect(after(0, 40)).toBeLessThan(ref);
+    expect(after(0, 1)).toBeGreaterThan(ref);
+    expect(after(0, 1)).toBeLessThan(1000);
+  });
+  it('happy customers (s > 0.5): a low price grows them faster, a high price slower', () => {
+    expect(stepServing(serving(100, 1000, 20), d, rng).product.satisfaction).toBeGreaterThan(0.5);
+    const ref = after(100, 20);
+    expect(ref).toBeGreaterThan(1000);
+    expect(after(100, 10)).toBeGreaterThan(ref);
+    expect(after(100, 40)).toBeLessThan(ref);
+    expect(after(100, 40)).toBeGreaterThan(1000);
+  });
+});

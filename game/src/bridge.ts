@@ -38,11 +38,14 @@ export class SimBridge {
   private speed: Speed = 0;
   private last = 0;
   private cancel: (() => void) | null = null;
+  private epoch = 0;
   private readonly offVisibility: () => void;
 
   constructor(private worker: WorkerLike, private env: BridgeEnv = browserEnv()) {
     worker.onmessage = (e) => {
-      if (e.data.t === 'state') for (const cb of this.listeners) cb(e.data.state);
+      // R23: a state from before the last init belongs to the replaced game (import / new game): drop it.
+      if (e.data.t !== 'state' || e.data.epoch < this.epoch) return;
+      for (const cb of this.listeners) cb(e.data.state);
     };
     this.offVisibility = env.onVisibilityChange(() => {
       // Hidden pauses the worker; the stored speed is restored when visible again (no catch-up: ticks are clamped).
@@ -57,7 +60,8 @@ export class SimBridge {
   }
 
   start(s: GameState): void {
-    this.worker.postMessage({ t: 'init', state: s });
+    this.epoch++;
+    this.worker.postMessage({ t: 'init', state: s, epoch: this.epoch });
     this.last = this.env.now();
     this.cancel?.();
     this.cancel = this.env.schedule(() => {

@@ -119,6 +119,10 @@ export function mount(root: HTMLElement, deps: PanelDeps, dialogRoot: HTMLElemen
   priceInput.addEventListener('input', () => {
     editing = true;
   });
+  // Leaving the field without applying drops the draft: the next state shows the real price again.
+  priceInput.addEventListener('blur', (e) => {
+    if (e.relatedTarget !== applyBtn) editing = false; // moving to «Aplicar» keeps the draft until it submits
+  });
   const effect = el(
     'p',
     { id: 'price-effect', class: 'small muted' },
@@ -156,9 +160,18 @@ export function mount(root: HTMLElement, deps: PanelDeps, dialogRoot: HTMLElemen
   let offersKey = '';
   let roundKey = '';
 
+  /** Active grants' text changes every game hour; it is patched in place so the list (and focus) stays put. */
+  const activeGrantEls = new Map<string, HTMLElement>();
+  const grantActiveText = (hours: number, weeks: number): string => t('jobs.grant.active', { hours: formatInt(hours), weeks });
+
   function renderOffers(s: GameState): void {
-    const k = JSON.stringify([s.contracts, s.grants]);
+    for (const g of s.grants) {
+      const li = activeGrantEls.get(g.id);
+      if (li && g.status === 'active') setText(li, grantActiveText(g.hoursLeft, g.weeksLeft));
+    }
+    const k = JSON.stringify([s.contracts, s.grants.map((g) => [g.id, g.status, g.weeksLeft])]);
     if (k === offersKey) return;
+    activeGrantEls.clear();
     offersKey = k;
     const hadFocus = root.contains(document.activeElement) && (consultList.contains(document.activeElement) || grantList.contains(document.activeElement));
     consultList.replaceChildren(
@@ -174,7 +187,11 @@ export function mount(root: HTMLElement, deps: PanelDeps, dialogRoot: HTMLElemen
     setHidden(consultNone, consultList.childElementCount > 0);
     grantList.replaceChildren(
       ...s.grants.map((g) => {
-        if (g.status === 'active') return el('li', { class: 'small' }, t('jobs.grant.active', { hours: formatInt(g.hoursLeft), weeks: g.weeksLeft }));
+        if (g.status === 'active') {
+          const li = el('li', { class: 'small' }, grantActiveText(g.hoursLeft, g.weeksLeft));
+          activeGrantEls.set(g.id, li);
+          return li;
+        }
         if (g.status === 'expired') return el('li', { class: 'small muted' }, t('jobs.grant.expired'));
         const b = el('button', { type: 'button', class: 'btn btn-primary' }, t('jobs.grant.apply'));
         b.addEventListener('click', () => deps.send({ t: 'apply_grant', grantId: g.id }));

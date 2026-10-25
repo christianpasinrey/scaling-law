@@ -5,7 +5,7 @@ import world from '../data/world.json';
 import products from '../data/products.json';
 import pulso from '../data/pulso.es.json';
 import { loadData, newGame } from '../src/sim';
-import { DB_NAME, SLOT_KEY, STORE, exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave } from '../src/save';
+import { DB_NAME, SLOT_KEY, STORE, exportFileName, exportSave, importSave, loadGame, saveGame, shouldAutosave, startPolicy } from '../src/save';
 
 const d = loadData(structuredClone({ hardware, world, products, pulso }));
 const fresh = () => ({ ...newGame(d, 42, 'Garage Lab'), hour: 200, cashUsd: 8123.45 });
@@ -126,5 +126,22 @@ describe('shouldAutosave', () => {
     expect(shouldAutosave(168, 335)).toBe(false);
     expect(shouldAutosave(100, 400)).toBe(true);
     expect(shouldAutosave(168, 168)).toBe(false);
+  });
+});
+
+describe('startPolicy (R16)', () => {
+  const s = newGame(loadData(structuredClone({ hardware, world, products, pulso })), 1, 'Lab');
+  it('continues a loaded game and may save it', () => {
+    expect(startPolicy({ ok: true, state: s })).toEqual({ resume: s, canSave: true, notice: null });
+  });
+  it('a missing save starts a new game that may save, silently', () => {
+    expect(startPolicy({ ok: false, reason: 'none' })).toEqual({ resume: null, canSave: true, notice: null });
+  });
+  it('a corrupt or other-version save starts a new game that replaces it, with a notice', () => {
+    expect(startPolicy({ ok: false, reason: 'corrupt' })).toEqual({ resume: null, canSave: true, notice: 'corrupt' });
+    expect(startPolicy({ ok: false, reason: 'version' })).toEqual({ resume: null, canSave: true, notice: 'version' });
+  });
+  it('unavailable storage starts a new game that never saves, with a persistent warning', () => {
+    expect(startPolicy({ ok: false, reason: 'unavailable' })).toEqual({ resume: null, canSave: false, notice: 'unavailable' });
   });
 });

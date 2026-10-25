@@ -7,17 +7,25 @@
       "deep": "Una capa densa calcula y = W·x + b: cada salida es una suma de productos que puede hacerse en paralelo. La GTX 1080 Ti (arquitectura Pascal, chip GP102) tiene 3.584 núcleos CUDA y unos 11,3 TFLOPS en FP32 (billones de operaciones de coma flotante por segundo).",
       "link": "https://en.wikipedia.org/wiki/Graphics_processing_unit",
       "source": "Wikipedia: Graphics processing unit; GeForce 10 series (especificaciones de la GTX 1080 Ti)",
-      "related": ["vram", "p100eq", "gpu_gtx1080ti"]
+      "related": [
+        "vram",
+        "p100eq",
+        "gpu_gtx1080ti"
+      ]
     },
     "gpu_gtx1080ti": {
       "title": "NVIDIA GeForce GTX 1080 Ti",
-      "short": "La tarjeta gaming más potente de NVIDIA en 2017, y una de las favoritas de los laboratorios pequeños para deep learning.",
+      "short": "La GeForce más potente de 2017 para el público general, y una de las favoritas de los laboratorios pequeños para deep learning.",
       "why": "Salió el 10 de marzo de 2017 a 699 $. Con 11 GB de memoria y mucha potencia de cálculo por dólar, permitía entrenar en casa modelos que poco antes exigían tarjetas profesionales mucho más caras. No tiene Tensor Cores: hace las cuentas con sus núcleos CUDA normales.",
       "deep": "Pascal GP102 · 3.584 núcleos CUDA · 11 GB GDDR5X · 250 W de consumo de diseño · ~11,3 TFLOPS FP32.",
       "game": "En el juego rinde 1,0 P100-equivalentes: una estimación de diseño para que el paper tarde unos 4 días con una sola tarjeta.",
       "link": "https://en.wikipedia.org/wiki/GeForce_10_series",
       "source": "Wikipedia: GeForce 10 series; NVIDIA (especificaciones de la GTX 1080 Ti). P100-equivalentes: estimación de diseño del juego",
-      "related": ["gpu", "p100eq", "vram"]
+      "related": [
+        "gpu",
+        "p100eq",
+        "vram"
+      ]
     },
     "gpu_titan_v": {
       "title": "NVIDIA Titan V",
@@ -27,7 +35,10 @@
       "game": "En el juego rinde 2,5 P100-equivalentes: estimación de diseño, no una medida.",
       "link": "https://en.wikipedia.org/wiki/Volta_(microarchitecture)",
       "source": "Wikipedia: Volta (microarchitecture); NVIDIA (anuncio de la Titan V, 7 dic 2017). P100-equivalentes: estimación de diseño del juego",
-      "related": ["gpu", "p100eq"]
+      "related": [
+        "gpu",
+        "p100eq"
+      ]
     },
     "open_frame": {
       "title": "Bastidor abierto",
@@ -37,17 +48,23 @@
       "game": "En el juego aparece el 1 de enero de 2018 por ritmo de partida (los bastidores de minería ya existían antes), cuesta unos 350 $ (estimación) y cada tarjeta vecina suma 1,5 °C, frente a 6 °C en la torre cerrada.",
       "link": "https://en.wikipedia.org/wiki/PCI_Express#Power",
       "source": "Especificación PCI Express CEM (75 W por ranura x16); precio y temperaturas: estimaciones de diseño del juego",
-      "related": ["throttling", "breaker"]
+      "related": [
+        "throttling",
+        "breaker"
+      ]
     },
     "vram": {
       "title": "VRAM (memoria de la GPU)",
       "short": "La VRAM es la memoria propia de la tarjeta: todo lo que la GPU calcula tiene que caber ahí.",
       "why": "Para entrenar hay que tener en la memoria de la GPU los pesos del modelo, sus gradientes, el estado del optimizador y los resultados intermedios de cada capa (activaciones). Si no cabe, hay que usar lotes más pequeños, menos precisión o repartir el modelo entre varias GPUs.",
-      "deep": "Con el optimizador Adam en FP32: 4 bytes de peso + 4 de gradiente + 8 de los dos momentos de Adam = 16 bytes por parámetro, más las activaciones. El modelo base del paper tiene unos 65 millones de parámetros: ≈ 1 GB más activaciones, así que cabe en los 11 GB de una 1080 Ti.",
+      "deep": "Con el optimizador Adam en FP32: 4 bytes de peso + 4 de gradiente + 8 de los dos momentos de Adam = 16 bytes por parámetro, más las activaciones. (En precisión mixta salen las mismas 16: 2 + 2 bytes en FP16 y 12 de copia y momentos en FP32, según el paper ZeRO.) El modelo base del paper tiene unos 65 millones de parámetros: ≈ 1 GB más activaciones, así que cabe en los 11 GB de una 1080 Ti.",
       "game": "En el juego la VRAM todavía no limita nada: el modelo de 2017 cabe de sobra en cualquiera de tus tarjetas.",
       "link": "https://arxiv.org/abs/1910.02054",
       "source": "arXiv 1706.03762 (tabla 3: 65 M de parámetros del modelo base); Rajbhandari et al., ZeRO, arXiv 1910.02054 (memoria por parámetro con Adam)",
-      "related": ["gpu", "data_parallel"]
+      "related": [
+        "gpu",
+        "data_parallel"
+      ]
     },
     "p100eq": {
       "title": "P100-equivalente",
@@ -57,7 +74,10 @@
       "game": "Las equivalencias (1080 Ti = 1,0; Titan V = 2,5) son estimaciones de diseño, no medidas.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §5.2 (8 × P100, 12 h, 100.000 pasos); equivalencias: estimación de diseño del juego",
-      "related": ["training", "gpu"]
+      "related": [
+        "training",
+        "gpu"
+      ]
     },
     "training": {
       "title": "Entrenamiento",
@@ -67,7 +87,12 @@
       "game": "En el juego el progreso se mide en P100-horas; la curva de loss que ves es didáctica, no los datos del paper.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §5 (datos, hardware, optimizador)",
-      "related": ["loss", "checkpoint", "data_parallel", "p100eq"]
+      "related": [
+        "loss",
+        "checkpoint",
+        "data_parallel",
+        "p100eq"
+      ]
     },
     "loss": {
       "title": "Loss (función de pérdida)",
@@ -77,7 +102,10 @@
       "game": "La curva del juego tiene la forma típica, pero sus números son didácticos: no son los del paper.",
       "link": "https://en.wikipedia.org/wiki/Cross-entropy",
       "source": "arXiv 1706.03762 §5.4 (label smoothing); Wikipedia: Cross-entropy. Curva del juego: forma didáctica (products.json, training.loss)",
-      "related": ["training", "softmax"]
+      "related": [
+        "training",
+        "softmax"
+      ]
     },
     "checkpoint": {
       "title": "Checkpoint (punto de control)",
@@ -87,7 +115,10 @@
       "game": "En el juego se guarda un checkpoint cada 4 horas de juego (decisión de diseño) y la marca blanca de la barra de progreso indica hasta dónde está a salvo.",
       "link": "https://doi.org/10.1145/361147.361115",
       "source": "J. W. Young, «A first order approximation to the optimum checkpoint interval», Communications of the ACM 17(9), 1974; intervalo del juego: decisión de diseño",
-      "related": ["training", "breaker"]
+      "related": [
+        "training",
+        "breaker"
+      ]
     },
     "inference": {
       "title": "Inferencia",
@@ -97,27 +128,38 @@
       "game": "En el juego cada P100-equivalente sirve unos 40 millones de caracteres por hora (estimación de diseño).",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3 y §6.1 (decodificación); capacidad por GPU: estimación de diseño del juego",
-      "related": ["translation_api", "encoder", "decoder", "data_parallel"]
+      "related": [
+        "translation_api",
+        "encoder",
+        "decoder",
+        "data_parallel"
+      ]
     },
     "throttling": {
       "title": "Throttling térmico",
       "short": "Cuando una GPU se calienta demasiado, baja su velocidad para protegerse.",
       "why": "El chip vigila su temperatura: si se acerca al límite, reduce frecuencia y voltaje para calentar menos. Rinde menos, pero no se estropea. Si aun así sigue subiendo, se apaga. En una torre cerrada dos tarjetas a plena carga se calientan entre ellas; más aire y más separación ayudan.",
-      "deep": "La GTX 1080 Ti tiene un objetivo de temperatura de 84 °C por defecto (GPU Boost 3.0) y NVIDIA da 91 °C como temperatura máxima. En la realidad la bajada es gradual, a escalones de frecuencia.",
-      "game": "El juego lo simplifica en dos saltos: desde 84 °C la GPU rinde ×0,7 y desde 91 °C se apaga hasta enfriarse. Cada tarjeta vecina suma 6 °C en la torre y 1,5 °C en el bastidor abierto: en el bastidor, con 4 tarjetas a plena carga ya se pasa de 84 °C.",
+      "deep": "GPU Boost de NVIDIA ajusta la frecuencia según la temperatura, el consumo y el voltaje: cerca del límite térmico la baja a escalones, poco a poco, en vez de pararse de golpe.",
+      "game": "El juego lo simplifica en dos saltos (valores aprox.): desde 84 °C, en la línea del objetivo térmico de las Founders Edition de Pascal, la GPU rinde ×0,7; desde 91 °C se apaga hasta enfriarse. Cada tarjeta vecina suma 6 °C en la torre y 1,5 °C en el bastidor abierto: en el bastidor, con 4 tarjetas a plena carga ya se pasa de 84 °C.",
       "link": "https://en.wikipedia.org/wiki/Dynamic_frequency_scaling",
-      "source": "NVIDIA (especificaciones GTX 1080 Ti: 91 °C máx.; GPU Boost 3.0); Wikipedia: Dynamic frequency scaling; temperaturas del juego: estimaciones de diseño (world.json)",
-      "related": ["gpu", "open_frame"]
+      "source": "Wikipedia: Dynamic frequency scaling; NVIDIA GPU Boost (descripción general); umbrales de 84 °C y 91 °C: aproximaciones de diseño del juego (world.json, approx: true)",
+      "related": [
+        "gpu",
+        "open_frame"
+      ]
     },
     "breaker": {
-      "title": "Diferencial y magnetotérmico",
-      "short": "Si el circuito del garaje pide más corriente de la que aguanta, un interruptor corta la luz para que los cables no se quemen.",
-      "why": "Cada circuito de una casa tiene un límite. Un circuito típico de EE. UU. es de 15 A a 120 V, es decir 1.800 W; para cargas continuas (más de 3 horas) la norma eléctrica recomienda no pasar del 80 %, 1.440 W. Coloquialmente decimos «ha saltado el diferencial», pero lo que corta por sobrecarga es el magnetotérmico (en EE. UU., el «circuit breaker»); el diferencial propiamente dicho salta por fugas de corriente.",
+      "title": "Magnetotérmico (los «plomos»)",
+      "short": "Si el circuito del garaje pide más corriente de la que aguanta, el magnetotérmico corta la luz para que los cables no se quemen.",
+      "why": "Cada circuito de una casa tiene un límite. Un circuito típico de EE. UU. es de 15 A a 120 V, es decir 1.800 W; para cargas continuas (más de 3 horas) la norma eléctrica recomienda no pasar del 80 %, 1.440 W. Decimos «han saltado los plomos» porque antes la protección eran fusibles de hilo de plomo; hoy es un interruptor magnetotérmico (en EE. UU., «circuit breaker»), que se rearma con una palanca. No hay que confundirlo con el diferencial, que es otro aparato: salta por fugas de corriente, no por sobrecarga.",
       "deep": "Potencia = tensión × corriente: 120 V × 15 A = 1.800 W; 80 % × 1.800 W = 1.440 W (NEC 210.20, cargas continuas). Un magnetotérmico real tolera picos breves y corta antes cuanto mayor es la sobrecarga.",
       "game": "En el juego salta al instante por encima de 1.800 W. Mientras está saltado no funciona nada, el entrenamiento vuelve al último checkpoint y la velocidad máxima es ×1 hasta que lo rearmes (y bajes el consumo).",
       "link": "https://en.wikipedia.org/wiki/Circuit_breaker",
-      "source": "docs/research/02-datacenter.md §1; Wikipedia: Circuit breaker; Residual-current device; NFPA 70 (NEC) 210.19/210.20",
-      "related": ["kwh", "checkpoint"]
+      "source": "docs/research/02-datacenter.md §1; Wikipedia: Circuit breaker; Fuse (electrical); Residual-current device; NFPA 70 (NEC) 210.19/210.20",
+      "related": [
+        "kwh",
+        "checkpoint"
+      ]
     },
     "kwh": {
       "title": "Kilovatio-hora (kWh)",
@@ -127,7 +169,10 @@
       "game": "En el juego la electricidad cuesta 0,13 $/kWh (media residencial de EE. UU. en 2017, aprox.) y se paga en la liquidación semanal.",
       "link": "https://en.wikipedia.org/wiki/Kilowatt-hour",
       "source": "Wikipedia: Kilowatt-hour; EIA (precio residencial medio de EE. UU., 2017)",
-      "related": ["breaker", "gpu_rental"]
+      "related": [
+        "breaker",
+        "gpu_rental"
+      ]
     },
     "gpu_rental": {
       "title": "Alquiler de cómputo",
@@ -137,7 +182,9 @@
       "game": "Las tarifas son estimaciones de diseño: 4 $/día por 1080 Ti hasta el 31 de marzo de 2018, 1 $/día después.",
       "link": "https://en.wikipedia.org/wiki/Cryptocurrency_bubble",
       "source": "Wikipedia: Cryptocurrency bubble (2017–2018); tarifas: estimaciones de diseño del juego (world.json)",
-      "related": ["kwh"]
+      "related": [
+        "kwh"
+      ]
     },
     "consulting": {
       "title": "Consultoría",
@@ -146,7 +193,9 @@
       "deep": "Ingreso por semana = importe del contrato / semanas de duración.",
       "game": "En el juego un contrato activo reduce a la mitad la velocidad de tus entrenamientos y paga a plazos semanales. Importes y duraciones son estimaciones de diseño.",
       "source": "Decisión de diseño del juego (products.json, economy.consulting)",
-      "related": ["training"]
+      "related": [
+        "training"
+      ]
     },
     "grant": {
       "title": "Subvención de cómputo",
@@ -156,17 +205,22 @@
       "game": "En el juego la beca aparece con reputación 15: 500 horas de nube que cuentan como 2,5 P100-equivalentes extra durante 8 semanas (cifras de diseño).",
       "link": "https://sites.research.google/trc/about/",
       "source": "Google: TPU Research Cloud (antes TensorFlow Research Cloud, anunciado en mayo de 2017); cifras: decisión de diseño del juego",
-      "related": ["p100eq", "training"]
+      "related": [
+        "p100eq",
+        "training"
+      ]
     },
     "funding_round": {
       "title": "Ronda de financiación",
       "short": "Una ronda es vender una parte de tu empresa a inversores a cambio de dinero para crecer.",
-      "why": "Una ronda «semilla» es la primera inversión seria: paga hardware y personas antes de que la empresa gane lo suficiente. El inversor no presta: compra acciones nuevas al precio que fija la valoración. La valoración «pre-money» es lo que vale la empresa antes de entrar el dinero; la «post-money», después.",
+      "why": "Una ronda «semilla» es la primera inversión seria: paga hardware y personas antes de que la empresa gane lo suficiente. En una ronda con precio, el inversor no presta: compra acciones nuevas al precio que fija la valoración. La valoración «pre-money» es lo que vale la empresa antes de entrar el dinero; la «post-money», después. Muchas rondas semilla se hacen con SAFE o notas convertibles, que aplazan el precio hasta la siguiente ronda.",
       "deep": "Post-money = pre-money + inversión. Participación del inversor = inversión / post-money = 1,5 M$ / (8 M$ + 1,5 M$) ≈ 15,8 %.",
       "game": "La ronda del juego (1,5 M$ con 8 M$ de valoración previa) es una estimación de diseño escalada a un laboratorio de garaje de 2017.",
       "link": "https://en.wikipedia.org/wiki/Seed_money",
-      "source": "docs/research/03-economy.md §10.3 escalado a 2017 (estimación de diseño); Wikipedia: Seed money; Pre-money valuation",
-      "related": ["dilution"]
+      "source": "docs/research/03-economy.md §10.3 escalado a 2017 (estimación de diseño); Wikipedia: Seed money; Pre-money valuation; Simple agreement for future equity; Convertible note",
+      "related": [
+        "dilution"
+      ]
     },
     "dilution": {
       "title": "Dilución",
@@ -176,7 +230,9 @@
       "game": "Cifras de la ronda: estimación de diseño del juego.",
       "link": "https://en.wikipedia.org/wiki/Stock_dilution",
       "source": "Wikipedia: Stock dilution; cifras: docs/research/03-economy.md §10.3 escalado a 2017 (estimación de diseño)",
-      "related": ["funding_round"]
+      "related": [
+        "funding_round"
+      ]
     },
     "data_parallel": {
       "title": "Paralelismo de datos",
@@ -186,7 +242,10 @@
       "game": "En el juego el rendimiento de las GPUs se suma sin pérdidas: la comunicación entre tarjetas no cuesta nada (en un garaje, por PCIe, sí costaría algo).",
       "link": "https://en.wikipedia.org/wiki/Data_parallelism",
       "source": "arXiv 1706.03762 §5.1–5.2; Wikipedia: Data parallelism; Patarasuk y Yuan, «Bandwidth optimal all-reduce algorithms», 2009",
-      "related": ["training", "vram"]
+      "related": [
+        "training",
+        "vram"
+      ]
     },
     "encoder": {
       "title": "Codificador (encoder)",
@@ -195,7 +254,12 @@
       "deep": "Cada subcapa calcula LayerNorm(x + Subcapa(x)). Todas las salidas tienen dimensión d_model = 512 en el modelo base.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3.1 y figura 1",
-      "related": ["attention", "feed_forward", "layer_norm", "decoder"]
+      "related": [
+        "attention",
+        "feed_forward",
+        "layer_norm",
+        "decoder"
+      ]
     },
     "decoder": {
       "title": "Decodificador (decoder)",
@@ -204,7 +268,13 @@
       "deep": "La máscara pone a −∞ las posiciones futuras antes del softmax, de modo que su peso de atención sea 0.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3.1, §3.2.3 y figura 1",
-      "related": ["attention", "feed_forward", "layer_norm", "softmax", "encoder"]
+      "related": [
+        "attention",
+        "feed_forward",
+        "layer_norm",
+        "softmax",
+        "encoder"
+      ]
     },
     "attention": {
       "title": "Atención",
@@ -213,16 +283,24 @@
       "deep": "Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k)·V, con 8 cabezas de d_k = 64 (8 × 64 = d_model = 512). Dividir por √d_k evita que los productos crezcan tanto que el softmax se sature.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3.2",
-      "related": ["encoder", "decoder", "softmax"]
+      "related": [
+        "encoder",
+        "decoder",
+        "softmax"
+      ]
     },
     "feed_forward": {
       "title": "Red feed-forward",
       "short": "Después de la atención, cada palabra pasa por una pequeña red propia que transforma su vector.",
-      "why": "La atención mezcla información entre palabras; la feed-forward procesa cada palabra por separado, con la misma red para todas las posiciones. Es donde está la mayoría de los parámetros de cada capa.",
-      "deep": "FFN(x) = max(0, x·W₁ + b₁)·W₂ + b₂: de 512 a 2.048 dimensiones, una ReLU, y de vuelta a 512.",
+      "why": "La atención mezcla información entre palabras; la feed-forward procesa cada palabra por separado, con la misma red para todas las posiciones. En una capa del codificador guarda unos dos tercios de los parámetros (la atención, el tercio restante); en una del decodificador, que tiene dos bloques de atención, más o menos la mitad.",
+      "deep": "FFN(x) = max(0, x·W₁ + b₁)·W₂ + b₂: de 512 a 2.048 dimensiones, una ReLU, y de vuelta a 512. Cuenta: la FFN tiene 2 × 512 × 2.048 ≈ 2,1 M de pesos; un bloque de atención, 4 × 512 × 512 ≈ 1,05 M (proyecciones Q, K, V y salida).",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3.3",
-      "related": ["encoder", "decoder", "layer_norm"]
+      "related": [
+        "encoder",
+        "decoder",
+        "layer_norm"
+      ]
     },
     "layer_norm": {
       "title": "Normalización (Layer Norm)",
@@ -231,7 +309,10 @@
       "deep": "LN(x) = γ·(x − μ)/σ + β, con μ y σ calculadas sobre las 512 componentes de cada vector y γ, β aprendidos. El paper normaliza después de sumar (post-LN); muchos modelos posteriores lo hacen antes (pre-LN).",
       "link": "https://arxiv.org/abs/1607.06450",
       "source": "Ba, Kiros y Hinton, «Layer Normalization», arXiv 1607.06450; arXiv 1706.03762 §3.1",
-      "related": ["encoder", "decoder"]
+      "related": [
+        "encoder",
+        "decoder"
+      ]
     },
     "embedding": {
       "title": "Embedding",
@@ -240,7 +321,10 @@
       "deep": "El paper usa un vocabulario compartido de unos 37.000 tokens (byte-pair encoding) para inglés-alemán. Codificación posicional: PE(pos, 2i) = sin(pos / 10000^(2i/512)) y PE(pos, 2i+1) = cos(…). Los embeddings comparten pesos con la capa lineal final y se multiplican por √512.",
       "link": "https://arxiv.org/abs/1706.03762",
       "source": "arXiv 1706.03762 §3.4, §3.5 y §5.1",
-      "related": ["encoder", "softmax"]
+      "related": [
+        "encoder",
+        "softmax"
+      ]
     },
     "softmax": {
       "title": "Linear + Softmax",
@@ -249,7 +333,11 @@
       "deep": "softmax(z)ᵢ = e^(zᵢ) / Σⱼ e^(zⱼ). Las puntuaciones más altas se llevan casi toda la probabilidad.",
       "link": "https://en.wikipedia.org/wiki/Softmax_function",
       "source": "arXiv 1706.03762 §3.4 y figura 1; Wikipedia: Softmax function",
-      "related": ["decoder", "loss", "embedding"]
+      "related": [
+        "decoder",
+        "loss",
+        "embedding"
+      ]
     },
     "translation_api": {
       "title": "API de traducción",
@@ -259,7 +347,9 @@
       "game": "Clientes, demanda, crecimiento y sensibilidad al precio son estimaciones de diseño del juego.",
       "link": "https://arxiv.org/abs/1609.08144",
       "source": "Google Cloud Translation (precio público 2017: 20 $/M caracteres); Wu et al., GNMT, arXiv 1609.08144; demanda y crecimiento: estimaciones de diseño (products.json)",
-      "related": ["inference"]
+      "related": [
+        "inference"
+      ]
     }
   }
 }
