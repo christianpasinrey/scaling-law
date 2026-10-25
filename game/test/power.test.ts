@@ -85,7 +85,7 @@ describe('power and breaker', () => {
     };
     const s = advance(s0, d, 1);
     expect(s.power.breakerTripped).toBe(true);
-    expect(s.power.watts).toBe(300);
+    expect(s.power.watts).toBe(0); // no power at all: not even the rigs' base draw is billed
     const item = s.pulso.find((p) => p.cause === 'outage');
     expect(item?.focus).toEqual({ kind: 'power' });
     const later = advance(s, d, 24);
@@ -111,6 +111,15 @@ describe('power and breaker', () => {
     const ok = advance(fixed, d, 1);
     expect(ok.power.breakerTripped).toBe(false);
     expect(ok.power.watts).toBeLessThanOrEqual(1800);
+  });
+  it('bills nothing while the breaker is tripped (0 W, no kWh, no electricity in the ledger)', () => {
+    const s0 = rigWith(2, 'tower_2017');
+    const tripped: GameState = { ...s0, power: { ...s0.power, breakerTripped: true, weekKwh: 0 } };
+    const s = advance(tripped, d, 168);
+    expect(s.power.breakerTripped).toBe(true);
+    expect(s.power.watts).toBe(0);
+    expect(s.ledger[0]!.lines.electricity).toBe(0);
+    expect(s.cashUsd).toBe(tripped.cashUsd);
   });
   it('reset_breaker without a trip warns', () => {
     const s = applyCommand(newGame(d, 1, 'Lab'), d, { t: 'reset_breaker' });

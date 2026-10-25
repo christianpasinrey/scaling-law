@@ -26,9 +26,12 @@ export function stepPower(s: GameState, d: GameData, _rng: Rng): GameState {
     return d.rigs.find((r) => r.id === owned?.model)?.baseWatts ?? 0;
   };
   const gpuWatts = (g: OwnedGpu): number => d.gpus.find((m) => m.id === g.model)?.watts.value ?? 0;
+  // Breaker out: the garage has no power at all, so nothing draws and nothing is billed (rig base included).
   const draw = (cur: GameState): number =>
-    cur.rigs.reduce((sum, r) => sum + rigBase(r.id), 0) +
-    cur.gpus.reduce((sum, g) => sum + gpuWatts(g) * loadOf(cur, g), 0);
+    cur.power.breakerTripped
+      ? 0
+      : cur.rigs.reduce((sum, r) => sum + rigBase(r.id), 0) +
+        cur.gpus.reduce((sum, g) => sum + gpuWatts(g) * loadOf(cur, g), 0);
 
   let cur = s;
   let watts = draw(cur);
