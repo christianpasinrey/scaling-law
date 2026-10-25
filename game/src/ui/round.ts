@@ -5,13 +5,15 @@ import type { Command, GameData, GameState } from '../sim';
 import { el } from './dom';
 import { formatDecimal, formatUsd, t } from './format';
 
-/** Opens the offer for an 'offered' round; resolves when the dialog closes. No-op otherwise. */
-export function openRoundOffer(root: HTMLElement, s: GameState, d: GameData, send: (c: Command) => void): Promise<void> {
-  if (s.round?.status !== 'offered' || s.outcome !== null) return Promise.resolve();
+export type RoundChoice = 'accept' | 'decline' | 'later' | '';
+
+/** Opens the offer for an 'offered' round; resolves with the choice when the dialog closes ('' if none). No-op otherwise. */
+export function openRoundOffer(root: HTMLElement, s: GameState, d: GameData, send: (c: Command) => void): Promise<RoundChoice> {
+  if (s.round?.status !== 'offered' || s.outcome !== null) return Promise.resolve('');
   const existing = root.querySelector<HTMLDialogElement>('dialog.round-offer');
   if (existing) {
     existing.querySelector<HTMLButtonElement>('.btn-primary')?.focus();
-    return Promise.resolve();
+    return Promise.resolve('');
   }
   const sr = d.world.seedRound;
   const vars = {
@@ -45,7 +47,7 @@ export function openRoundOffer(root: HTMLElement, s: GameState, d: GameData, sen
       if (v === 'accept') send({ t: 'accept_round' });
       else if (v === 'decline') send({ t: 'decline_round' });
       if (back && back.isConnected) back.focus();
-      resolve();
+      resolve(v === 'accept' || v === 'decline' || v === 'later' ? v : '');
     });
     dlg.showModal();
     later.focus(); // accepting ends the M1: the harmless choice has focus

@@ -214,8 +214,9 @@ export function mountUi(app: HTMLElement, deps: UiDeps): UiApi {
         shownOffer = offerKey;
         const before = speed;
         if (before !== 0) deps.setSpeed(0);
-        void openRoundOffer(root, s, deps.data, deps.send).then(() => {
-          if (before !== 0 && speed === 0 && latest?.outcome === null) deps.setSpeed(before);
+        void openRoundOffer(root, s, deps.data, deps.send).then((choice) => {
+          // Accepting ends the M1: stay paused until the outcome (and its end screen) arrives.
+          if (choice !== 'accept' && before !== 0 && speed === 0 && latest?.outcome === null) deps.setSpeed(before);
         });
       }
     },
